@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/language/ast"
+	"github.com/karfield/graphql/gqlerrors"
+	"github.com/karfield/graphql/language/ast"
 )
 
 type ExecuteParams struct {
