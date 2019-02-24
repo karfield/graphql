@@ -229,16 +229,20 @@ type ScalarConfig struct {
 // NewScalar creates a new GraphQLScalar
 func NewScalar(config ScalarConfig) *Scalar {
 	st := &Scalar{}
+	_ = InitScalar(st, config)
+	return st
+}
+func InitScalar(st *Scalar, config ScalarConfig) error {
 	err := invariant(config.Name != "", "Type must be named.")
 	if err != nil {
 		st.err = err
-		return st
+		return err
 	}
 
 	err = assertValidName(config.Name)
 	if err != nil {
 		st.err = err
-		return st
+		return err
 	}
 
 	st.PrivateName = config.Name
@@ -252,7 +256,7 @@ func NewScalar(config ScalarConfig) *Scalar {
 	)
 	if err != nil {
 		st.err = err
-		return st
+		return err
 	}
 	if config.ParseValue != nil || config.ParseLiteral != nil {
 		err = invariantf(
@@ -261,12 +265,12 @@ func NewScalar(config ScalarConfig) *Scalar {
 		)
 		if err != nil {
 			st.err = err
-			return st
+			return err
 		}
 	}
 
 	st.scalarConfig = config
-	return st
+	return nil
 }
 func (st *Scalar) Serialize(value interface{}) interface{} {
 	if st.scalarConfig.Serialize == nil {
@@ -380,16 +384,20 @@ type FieldsThunk func() Fields
 
 func NewObject(config ObjectConfig) *Object {
 	objectType := &Object{}
+	_ = InitObject(objectType, config)
+	return objectType
+}
 
+func InitObject(objectType *Object, config ObjectConfig) error {
 	err := invariant(config.Name != "", "Type must be named.")
 	if err != nil {
 		objectType.err = err
-		return objectType
+		return objectType.err
 	}
 	err = assertValidName(config.Name)
 	if err != nil {
 		objectType.err = err
-		return objectType
+		return objectType.err
 	}
 
 	objectType.PrivateName = config.Name
@@ -397,7 +405,7 @@ func NewObject(config ObjectConfig) *Object {
 	objectType.IsTypeOf = config.IsTypeOf
 	objectType.typeConfig = config
 
-	return objectType
+	return nil
 }
 func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
@@ -702,19 +710,22 @@ type ResolveTypeFn func(p ResolveTypeParams) *Object
 
 func NewInterface(config InterfaceConfig) *Interface {
 	it := &Interface{}
-
+	_ = InitInterface(it, config)
+	return it
+}
+func InitInterface(it *Interface, config InterfaceConfig) error {
 	if it.err = invariant(config.Name != "", "Type must be named."); it.err != nil {
-		return it
+		return it.err
 	}
 	if it.err = assertValidName(config.Name); it.err != nil {
-		return it
+		return it.err
 	}
 	it.PrivateName = config.Name
 	it.PrivateDescription = config.Description
 	it.ResolveType = config.ResolveType
 	it.typeConfig = config
 
-	return it
+	return nil
 }
 
 func (it *Interface) AddFieldConfig(fieldName string, fieldConfig *Field) {
@@ -801,12 +812,15 @@ type UnionConfig struct {
 
 func NewUnion(config UnionConfig) *Union {
 	objectType := &Union{}
-
+	_ = InitUnion(objectType, config)
+	return objectType
+}
+func InitUnion(objectType *Union, config UnionConfig) error {
 	if objectType.err = invariant(config.Name != "", "Type must be named."); objectType.err != nil {
-		return objectType
+		return objectType.err
 	}
 	if objectType.err = assertValidName(config.Name); objectType.err != nil {
-		return objectType
+		return objectType.err
 	}
 	objectType.PrivateName = config.Name
 	objectType.PrivateDescription = config.Description
@@ -816,14 +830,14 @@ func NewUnion(config UnionConfig) *Union {
 		len(config.Types) > 0,
 		`Must provide Array of types for Union %v.`, config.Name,
 	); objectType.err != nil {
-		return objectType
+		return objectType.err
 	}
 	for _, ttype := range config.Types {
 		if objectType.err = invariantf(
 			ttype != nil,
 			`%v may only contain Object types, it cannot contain: %v.`, objectType, ttype,
 		); objectType.err != nil {
-			return objectType
+			return objectType.err
 		}
 		if objectType.ResolveType == nil {
 			if objectType.err = invariantf(
@@ -833,15 +847,16 @@ func NewUnion(config UnionConfig) *Union {
 					`function. There is no way to resolve this possible type `+
 					`during execution.`, objectType, ttype,
 			); objectType.err != nil {
-				return objectType
+				return objectType.err
 			}
 		}
 	}
 	objectType.types = config.Types
 	objectType.typeConfig = config
 
-	return objectType
+	return nil
 }
+
 func (ut *Union) Types() []*Object {
 	return ut.types
 }
@@ -909,19 +924,23 @@ type EnumValueDefinition struct {
 
 func NewEnum(config EnumConfig) *Enum {
 	gt := &Enum{}
+	_ = InitEnum(gt, config)
+	return gt
+}
+func InitEnum(gt *Enum, config EnumConfig) error {
 	gt.enumConfig = config
 
 	if gt.err = assertValidName(config.Name); gt.err != nil {
-		return gt
+		return gt.err
 	}
 
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	if gt.values, gt.err = gt.defineEnumValues(config.Values); gt.err != nil {
-		return gt
+		return gt.err
 	}
 
-	return gt
+	return nil
 }
 func (gt *Enum) defineEnumValues(valueMap EnumValueConfigMap) ([]*EnumValueDefinition, error) {
 	var err error
@@ -1096,14 +1115,18 @@ type InputObjectConfig struct {
 
 func NewInputObject(config InputObjectConfig) *InputObject {
 	gt := &InputObject{}
+	_ = InitInputObject(gt, config)
+	return gt
+}
+func InitInputObject(gt *InputObject, config InputObjectConfig) error {
 	if gt.err = invariant(config.Name != "", "Type must be named."); gt.err != nil {
-		return gt
+		return gt.err
 	}
 
 	gt.PrivateName = config.Name
 	gt.PrivateDescription = config.Description
 	gt.typeConfig = config
-	return gt
+	return nil
 }
 
 func (gt *InputObject) defineFieldMap() InputObjectFieldMap {
@@ -1205,14 +1228,17 @@ type List struct {
 
 func NewList(ofType Type) *List {
 	gl := &List{}
-
+	_ = InitList(gl, ofType)
+	return gl
+}
+func InitList(gl *List, ofType Type) error {
 	gl.err = invariantf(ofType != nil, `Can only create List of a Type but got: %v.`, ofType)
 	if gl.err != nil {
-		return gl
+		return gl.err
 	}
 
 	gl.OfType = ofType
-	return gl
+	return nil
 }
 func (gl *List) Name() string {
 	return fmt.Sprintf("%v", gl.OfType)
@@ -1256,14 +1282,17 @@ type NonNull struct {
 
 func NewNonNull(ofType Type) *NonNull {
 	gl := &NonNull{}
-
+	_ = InitNonNull(gl, ofType)
+	return gl
+}
+func InitNonNull(gl *NonNull, ofType Type) error {
 	_, isOfTypeNonNull := ofType.(*NonNull)
 	gl.err = invariantf(ofType != nil && !isOfTypeNonNull, `Can only create NonNull of a Nullable Type but got: %v.`, ofType)
 	if gl.err != nil {
-		return gl
+		return gl.err
 	}
 	gl.OfType = ofType
-	return gl
+	return nil
 }
 func (gl *NonNull) Name() string {
 	return fmt.Sprintf("%v!", gl.OfType)
