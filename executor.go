@@ -618,17 +618,33 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		VariableValues: eCtx.VariableValues,
 	}
 
-	var resolveFnError error
-
-	result, resolveFnError = resolveFn(ResolveParams{
+	params := ResolveParams{
 		Source:  source,
 		Args:    args,
 		Info:    info,
 		Context: eCtx.Context,
-	})
+	}
+
+	mw := eCtx.Schema.middleware
+	if mw != nil {
+		err := mw.BeforeResolveField(params)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	var resolveFnError error
+	result, resolveFnError = resolveFn(params)
 
 	if resolveFnError != nil {
 		panic(resolveFnError)
+	}
+
+	if mw != nil {
+		err := mw.AfterResolveField(params, result)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)

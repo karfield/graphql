@@ -4,12 +4,18 @@ import (
 	"fmt"
 )
 
+type Middleware interface {
+	BeforeResolveField(p ResolveParams) error
+	AfterResolveField(p ResolveParams, result interface{}) error
+}
+
 type SchemaConfig struct {
 	Query        *Object
 	Mutation     *Object
 	Subscription *Object
 	Types        []Type
 	Directives   []*Directive
+	Middleware   Middleware
 }
 
 type TypeMap map[string]Type
@@ -43,6 +49,7 @@ type Schema struct {
 	subscriptionType *Object
 	implementations  map[string][]*Object
 	possibleTypeMap  map[string]map[string]bool
+	middleware       Middleware
 }
 
 func NewSchema(config SchemaConfig) (Schema, error) {
@@ -65,6 +72,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 	schema.queryType = config.Query
 	schema.mutationType = config.Mutation
 	schema.subscriptionType = config.Subscription
+	schema.middleware = config.Middleware
 
 	// Provide specified directives (e.g. @include and @skip) by default.
 	schema.directives = config.Directives
