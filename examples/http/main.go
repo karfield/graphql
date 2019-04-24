@@ -56,13 +56,13 @@ var queryType = graphql.NewObject(
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					idQuery, isOK := p.Args["id"].(string)
 					if isOK {
 						return data[idQuery], nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
 	})
@@ -74,7 +74,7 @@ var schema, _ = graphql.NewSchema(
 )
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

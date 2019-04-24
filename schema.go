@@ -330,11 +330,11 @@ func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, 
 
 	switch objectType := objectType.(type) {
 	case *Object:
-		fieldMap := objectType.Fields()
+		fieldList := objectType.Fields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
-		for _, field := range fieldMap {
+		for _, field := range fieldList {
 			for _, arg := range field.Args {
 				typeMap, err = typeMapReducer(schema, typeMap, arg.Type)
 				if err != nil {
@@ -347,11 +347,11 @@ func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, 
 			}
 		}
 	case *Interface:
-		fieldMap := objectType.Fields()
+		fieldList := objectType.Fields()
 		if objectType.err != nil {
 			return typeMap, objectType.err
 		}
-		for _, field := range fieldMap {
+		for _, field := range fieldList {
 			for _, arg := range field.Args {
 				typeMap, err = typeMapReducer(schema, typeMap, arg.Type)
 				if err != nil {
@@ -379,8 +379,8 @@ func typeMapReducer(schema *Schema, typeMap TypeMap, objectType Type) (TypeMap, 
 }
 
 func assertObjectImplementsInterface(schema *Schema, object *Object, iface *Interface) error {
-	objectFieldMap := object.Fields()
-	ifaceFieldMap := iface.Fields()
+	objectFieldMap := object.FieldMap()
+	ifaceFieldMap := iface.FieldMap()
 
 	// Assert each interface field is implemented.
 	for fieldName := range ifaceFieldMap {

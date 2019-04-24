@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
+
+	"github.com/karfield/graphql/gqlerrors"
 
 	"github.com/karfield/graphql/language/ast"
 )
@@ -346,9 +349,10 @@ type Object struct {
 
 	typeConfig            ObjectConfig
 	initialisedFields     bool
-	fields                FieldDefinitionMap
+	fields                FieldDefinitionList
+	fieldMap              map[string]*FieldDefinition
 	initialisedInterfaces bool
-	interfaces            []*Interface
+	interfaces            Interfaces
 	// Interim alternative to throwing an error during schema definition at run-time
 	err error
 }
@@ -370,17 +374,29 @@ type IsTypeOfParams struct {
 
 type IsTypeOfFn func(p IsTypeOfParams) bool
 
-type InterfacesThunk func() []*Interface
+type ConfigurableInterfaces interface {
+	configurableInterfaces()
+}
+
+type Interfaces []*Interface
+
+func (Interfaces) configurableInterfaces() {}
+
+type InterfacesThunk func() Interfaces
+
+func (InterfacesThunk) configurableInterfaces() {}
 
 type ObjectConfig struct {
-	Name        string      `json:"name"`
-	Interfaces  interface{} `json:"interfaces"`
-	Fields      interface{} `json:"fields"`
-	IsTypeOf    IsTypeOfFn  `json:"isTypeOf"`
-	Description string      `json:"description"`
+	Name        string                 `json:"name"`
+	Interfaces  ConfigurableInterfaces `json:"interfaces"`
+	Fields      ConfigurableFields     `json:"fields"`
+	IsTypeOf    IsTypeOfFn             `json:"isTypeOf"`
+	Description string                 `json:"description"`
 }
 
 type FieldsThunk func() Fields
+
+func (FieldsThunk) configurableFields() {}
 
 func NewObject(config ObjectConfig) *Object {
 	objectType := &Object{}
@@ -425,34 +441,45 @@ func (gt *Object) Description() string {
 func (gt *Object) String() string {
 	return gt.PrivateName
 }
-func (gt *Object) Fields() FieldDefinitionMap {
+func (gt *Object) Fields() FieldDefinitionList {
 	if gt.initialisedFields {
 		return gt.fields
 	}
 
-	var configureFields Fields
-	switch fields := gt.typeConfig.Fields.(type) {
-	case Fields:
-		configureFields = fields
-	case FieldsThunk:
-		configureFields = fields()
+	configureFields := gt.typeConfig.Fields
+	if thunk, ok := configureFields.(FieldsThunk); ok {
+		configureFields = thunk()
 	}
 
-	gt.fields, gt.err = defineFieldMap(gt, configureFields)
+	gt.fields, gt.err = defineFieldList(gt, configureFields)
+	gt.fieldMap = map[string]*FieldDefinition{}
+	for _, field := range gt.fields {
+		gt.fieldMap[field.Name] = field
+	}
 	gt.initialisedFields = true
 	return gt.fields
 }
 
-func (gt *Object) Interfaces() []*Interface {
+func (gt *Object) FieldMap() map[string]*FieldDefinition {
+	gt.Fields()
+	return gt.fieldMap
+}
+
+func (gt *Object) Field(name string) *FieldDefinition {
+	gt.Fields()
+	return gt.fieldMap[name]
+}
+
+func (gt *Object) Interfaces() Interfaces {
 	if gt.initialisedInterfaces {
 		return gt.interfaces
 	}
 
-	var configInterfaces []*Interface
+	var configInterfaces Interfaces
 	switch iface := gt.typeConfig.Interfaces.(type) {
 	case InterfacesThunk:
 		configInterfaces = iface()
-	case []*Interface:
+	case Interfaces:
 		configInterfaces = iface
 	case nil:
 	default:
@@ -470,8 +497,8 @@ func (gt *Object) Error() error {
 	return gt.err
 }
 
-func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, error) {
-	ifaces := []*Interface{}
+func defineInterfaces(ttype *Object, interfaces Interfaces) (Interfaces, error) {
+	var ifaces Interfaces
 
 	if len(interfaces) == 0 {
 		return ifaces, nil
@@ -502,70 +529,121 @@ func defineInterfaces(ttype *Object, interfaces []*Interface) ([]*Interface, err
 	return ifaces, nil
 }
 
-func defineFieldMap(ttype Named, fieldMap Fields) (FieldDefinitionMap, error) {
-	resultFieldMap := FieldDefinitionMap{}
-
+func newFieldDefinition(ttype Named, fieldName string, field *Field) (*FieldDefinition, error) {
+	if fieldName == "" {
+		fieldName = field.Name
+	}
 	err := invariantf(
-		len(fieldMap) > 0,
-		`%v fields must be an object with field names as keys or a function which return such an object.`, ttype,
+		field.Type != nil,
+		`%v.%v field type must be Output Type but got: %v.`, ttype, fieldName, field.Type,
 	)
 	if err != nil {
-		return resultFieldMap, err
+		return nil, err
+	}
+	if field.Type.Error() != nil {
+		return nil, field.Type.Error()
+	}
+	if err = assertValidName(fieldName); err != nil {
+		return nil, err
+	}
+	fieldDef := &FieldDefinition{
+		Name:              fieldName,
+		Description:       field.Description,
+		Type:              field.Type,
+		Resolve:           field.Resolve,
+		DeprecationReason: field.DeprecationReason,
 	}
 
-	for fieldName, field := range fieldMap {
-		if field == nil {
-			continue
+	fieldDef.Args = []*Argument{}
+	for argName, arg := range field.Args {
+		if err = assertValidName(argName); err != nil {
+			return nil, err
 		}
-		err = invariantf(
-			field.Type != nil,
-			`%v.%v field type must be Output Type but got: %v.`, ttype, fieldName, field.Type,
+		if err = invariantf(
+			arg != nil,
+			`%v.%v args must be an object with argument names as keys.`, ttype, fieldName,
+		); err != nil {
+			return nil, err
+		}
+		if err = invariantf(
+			arg.Type != nil,
+			`%v.%v(%v:) argument type must be Input Type but got: %v.`, ttype, fieldName, argName, arg.Type,
+		); err != nil {
+			return nil, err
+		}
+		fieldArg := &Argument{
+			PrivateName:        argName,
+			PrivateDescription: arg.Description,
+			Type:               arg.Type,
+			DefaultValue:       arg.DefaultValue,
+		}
+		fieldDef.Args = append(fieldDef.Args, fieldArg)
+	}
+
+	return fieldDef, nil
+}
+
+func defineFieldList(ttype Named, fields ConfigurableFields) (FieldDefinitionList, error) {
+	var definitions FieldDefinitionList
+
+	if fieldList, ok := fields.(OrderedFields); ok {
+		err := invariantf(
+			len(fieldList) > 0,
+			`%v has not any field.`, ttype,
 		)
 		if err != nil {
-			return resultFieldMap, err
-		}
-		if field.Type.Error() != nil {
-			return resultFieldMap, field.Type.Error()
-		}
-		if err = assertValidName(fieldName); err != nil {
-			return resultFieldMap, err
-		}
-		fieldDef := &FieldDefinition{
-			Name:              fieldName,
-			Description:       field.Description,
-			Type:              field.Type,
-			Resolve:           field.Resolve,
-			DeprecationReason: field.DeprecationReason,
+			return definitions, err
 		}
 
-		fieldDef.Args = []*Argument{}
-		for argName, arg := range field.Args {
-			if err = assertValidName(argName); err != nil {
-				return resultFieldMap, err
+		for i, field := range fieldList {
+			if field == nil {
+				continue
 			}
-			if err = invariantf(
-				arg != nil,
-				`%v.%v args must be an object with argument names as keys.`, ttype, fieldName,
-			); err != nil {
-				return resultFieldMap, err
+			if field.Name == "" {
+				return definitions, gqlerrors.NewFormattedError(fmt.Sprintf(`missing name for %v[%d]`, ttype, i))
 			}
-			if err = invariantf(
-				arg.Type != nil,
-				`%v.%v(%v:) argument type must be Input Type but got: %v.`, ttype, fieldName, argName, arg.Type,
-			); err != nil {
-				return resultFieldMap, err
+			def, err := newFieldDefinition(ttype, "", field)
+			if err != nil {
+				return definitions, err
 			}
-			fieldArg := &Argument{
-				PrivateName:        argName,
-				PrivateDescription: arg.Description,
-				Type:               arg.Type,
-				DefaultValue:       arg.DefaultValue,
-			}
-			fieldDef.Args = append(fieldDef.Args, fieldArg)
+			definitions = append(definitions, def)
 		}
-		resultFieldMap[fieldName] = fieldDef
+	} else if fieldMap, ok := fields.(Fields); ok {
+
+		err := invariantf(
+			len(fieldMap) > 0,
+			`%v fields must be an object with field names as keys or a function which return such an object.`, ttype,
+		)
+		if err != nil {
+			return definitions, err
+		}
+
+		var names []string
+		for name := range fieldMap {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+
+		for _, fieldName := range names {
+			field := fieldMap[fieldName]
+			if field == nil {
+				continue
+			}
+			def, err := newFieldDefinition(ttype, fieldName, field)
+			if err != nil {
+				return definitions, err
+			}
+			definitions = append(definitions, def)
+		}
+	} else if fields == nil {
+		err := invariantf(false,
+			`%v fields must be an object with field names as keys or a function which return such an object.`, ttype,
+		)
+		if err != nil {
+			return definitions, err
+		}
 	}
-	return resultFieldMap, nil
+	return definitions, nil
 }
 
 // ResolveParams Params for FieldResolveFn()
@@ -585,7 +663,14 @@ type ResolveParams struct {
 	Context context.Context
 }
 
-type FieldResolveFn func(p ResolveParams) (interface{}, error)
+type FieldResolveFn interface {
+	fieldResolveFn()
+}
+type ResolveField func(p ResolveParams) (interface{}, error)
+type ResolveFieldWithContext func(p ResolveParams) (interface{}, context.Context, error)
+
+func (ResolveField) fieldResolveFn()            {}
+func (ResolveFieldWithContext) fieldResolveFn() {}
 
 type ResolveInfo struct {
 	FieldName      string
@@ -600,7 +685,18 @@ type ResolveInfo struct {
 	VariableValues map[string]interface{}
 }
 
+type ConfigurableFields interface {
+	configurableFields()
+}
+
 type Fields map[string]*Field
+
+func (Fields) configurableFields() {}
+
+// OrderedFields is helped to resolve the fields by the original order
+type OrderedFields []*Field
+
+func (OrderedFields) configurableFields() {}
 
 type Field struct {
 	Name              string              `json:"name"` // used by graphlql-relay
@@ -619,7 +715,7 @@ type ArgumentConfig struct {
 	Description  string      `json:"description"`
 }
 
-type FieldDefinitionMap map[string]*FieldDefinition
+type FieldDefinitionList []*FieldDefinition
 type FieldDefinition struct {
 	Name              string         `json:"name"`
 	Description       string         `json:"description"`
@@ -681,12 +777,13 @@ type Interface struct {
 
 	typeConfig        InterfaceConfig
 	initialisedFields bool
-	fields            FieldDefinitionMap
+	fields            FieldDefinitionList
+	fieldMap          map[string]*FieldDefinition
 	err               error
 }
 type InterfaceConfig struct {
-	Name        string      `json:"name"`
-	Fields      interface{} `json:"fields"`
+	Name        string             `json:"name"`
+	Fields      ConfigurableFields `json:"fields"`
 	ResolveType ResolveTypeFn
 	Description string `json:"description"`
 }
@@ -746,7 +843,7 @@ func (it *Interface) Description() string {
 	return it.PrivateDescription
 }
 
-func (it *Interface) Fields() (fields FieldDefinitionMap) {
+func (it *Interface) Fields() (fields FieldDefinitionList) {
 	if it.initialisedFields {
 		return it.fields
 	}
@@ -759,9 +856,23 @@ func (it *Interface) Fields() (fields FieldDefinitionMap) {
 		configureFields = fields()
 	}
 
-	it.fields, it.err = defineFieldMap(it, configureFields)
+	it.fields, it.err = defineFieldList(it, configureFields)
+	it.fieldMap = make(map[string]*FieldDefinition)
+	for _, field := range it.fields {
+		it.fieldMap[field.Name] = field
+	}
 	it.initialisedFields = true
 	return it.fields
+}
+
+func (it *Interface) FieldMap() map[string]*FieldDefinition {
+	it.Fields()
+	return it.fieldMap
+}
+
+func (it *Interface) Field(name string) *FieldDefinition {
+	it.Fields()
+	return it.fieldMap[name]
 }
 
 func (it *Interface) String() string {
@@ -1104,13 +1215,21 @@ func (st *InputObjectField) Error() error {
 	return nil
 }
 
+type InputConfigurableFields interface {
+	inputConfigurableFields()
+}
+
 type InputObjectConfigFieldMap map[string]*InputObjectFieldConfig
 type InputObjectFieldMap map[string]*InputObjectField
 type InputObjectConfigFieldMapThunk func() InputObjectConfigFieldMap
+
+func (InputObjectConfigFieldMap) inputConfigurableFields()      {}
+func (InputObjectConfigFieldMapThunk) inputConfigurableFields() {}
+
 type InputObjectConfig struct {
-	Name        string      `json:"name"`
-	Fields      interface{} `json:"fields"`
-	Description string      `json:"description"`
+	Name        string                  `json:"name"`
+	Fields      InputConfigurableFields `json:"fields"`
+	Description string                  `json:"description"`
 }
 
 func NewInputObject(config InputObjectConfig) *InputObject {

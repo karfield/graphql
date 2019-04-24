@@ -65,9 +65,9 @@ func TestBindFields(t *testing.T) {
 	fields := graphql.Fields{
 		"person": &graphql.Field{
 			Type: personType,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				return personSource, nil
-			},
+			}),
 		},
 	}
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -92,7 +92,7 @@ func TestBindFields(t *testing.T) {
 		}
 	`
 	params := graphql.Params{Schema: schema, RequestString: query}
-	r := graphql.Do(params)
+	r, _ := graphql.Do(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
 	}
@@ -125,7 +125,7 @@ func TestBindArg(t *testing.T) {
 			Type: friendObj,
 			//it can be added more than one since it's a slice
 			Args: graphql.BindArg(Friend{}, "name"),
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				if name, ok := p.Args["name"].(string); ok {
 					for _, friend := range friendSource {
 						if friend.Name == name {
@@ -134,7 +134,7 @@ func TestBindArg(t *testing.T) {
 					}
 				}
 				return nil, nil
-			},
+			}),
 		},
 	}
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: fields}
@@ -153,7 +153,7 @@ func TestBindArg(t *testing.T) {
 		}
 	`
 	params := graphql.Params{Schema: schema, RequestString: query}
-	r := graphql.Do(params)
+	r, _ := graphql.Do(params)
 	if len(r.Errors) > 0 {
 		log.Fatalf("failed to execute graphql operation, errors: %+v", r.Errors)
 	}

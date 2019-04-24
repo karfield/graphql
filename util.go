@@ -62,9 +62,9 @@ func BindFields(obj interface{}) Fields {
 		}
 		fields[tag] = &Field{
 			Type: graphType,
-			Resolve: func(p ResolveParams) (interface{}, error) {
+			Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 				return extractValue(tag, p.Source), nil
-			},
+			}),
 		}
 	}
 	return fields

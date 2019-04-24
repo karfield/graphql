@@ -10,7 +10,8 @@ import (
 )
 
 func g(t *testing.T, p graphql.Params) *graphql.Result {
-	return graphql.Do(p)
+	result, _ := graphql.Do(p)
+	return result
 }
 
 func TestIntrospection_ExecutesAnIntrospectionQuery(t *testing.T) {
@@ -857,9 +858,9 @@ func TestIntrospection_ExecutesAnInputObject(t *testing.T) {
 						Type: testInputObject,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return p.Args["complex"], nil
-				},
+				}),
 			},
 		},
 	})

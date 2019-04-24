@@ -33,7 +33,7 @@ type Params struct {
 	Context context.Context
 }
 
-func Do(p Params) *Result {
+func Do(p Params) (*Result, context.Context) {
 	source := source.NewSource(&source.Source{
 		Body: []byte(p.RequestString),
 		Name: "GraphQL request",
@@ -42,14 +42,14 @@ func Do(p Params) *Result {
 	if err != nil {
 		return &Result{
 			Errors: gqlerrors.FormatErrors(err),
-		}
+		}, p.Context
 	}
 	validationResult := ValidateDocument(&p.Schema, AST, nil)
 
 	if !validationResult.IsValid {
 		return &Result{
 			Errors: validationResult.Errors,
-		}
+		}, p.Context
 	}
 
 	return Execute(ExecuteParams{

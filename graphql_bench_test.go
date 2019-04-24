@@ -13,7 +13,7 @@ type B struct {
 }
 
 func benchGraphql(bench B, p graphql.Params, t testing.TB) {
-	result := graphql.Do(p)
+	result, _ := graphql.Do(p)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}

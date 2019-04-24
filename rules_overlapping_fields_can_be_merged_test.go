@@ -413,8 +413,8 @@ func init() {
 	})
 	stringBoxObject = graphql.NewObject(graphql.ObjectConfig{
 		Name: "StringBox",
-		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
-			return []*graphql.Interface{someBoxInterface}
+		Interfaces: (graphql.InterfacesThunk)(func() graphql.Interfaces {
+			return graphql.Interfaces{someBoxInterface}
 		}),
 		Fields: graphql.FieldsThunk(func() graphql.Fields {
 			return graphql.Fields{
@@ -441,8 +441,8 @@ func init() {
 	})
 	intBoxObject = graphql.NewObject(graphql.ObjectConfig{
 		Name: "IntBox",
-		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
-			return []*graphql.Interface{someBoxInterface}
+		Interfaces: (graphql.InterfacesThunk)(func() graphql.Interfaces {
+			return graphql.Interfaces{someBoxInterface}
 		}),
 		Fields: graphql.FieldsThunk(func() graphql.Fields {
 			return graphql.Fields{
@@ -480,8 +480,8 @@ func init() {
 	})
 	NonNullStringBox1Impl := graphql.NewObject(graphql.ObjectConfig{
 		Name: "NonNullStringBox1Impl",
-		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
-			return []*graphql.Interface{someBoxInterface, nonNullStringBox1Interface}
+		Interfaces: (graphql.InterfacesThunk)(func() graphql.Interfaces {
+			return graphql.Interfaces{someBoxInterface, nonNullStringBox1Interface}
 		}),
 		Fields: graphql.Fields{
 			"scalar": &graphql.Field{
@@ -508,8 +508,8 @@ func init() {
 	})
 	NonNullStringBox2Impl := graphql.NewObject(graphql.ObjectConfig{
 		Name: "NonNullStringBox2Impl",
-		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
-			return []*graphql.Interface{someBoxInterface, nonNullStringBox2Interface}
+		Interfaces: (graphql.InterfacesThunk)(func() graphql.Interfaces {
+			return graphql.Interfaces{someBoxInterface, nonNullStringBox2Interface}
 		}),
 		Fields: graphql.Fields{
 			"scalar": &graphql.Field{

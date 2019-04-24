@@ -39,7 +39,7 @@ var namedType = graphql.NewInterface(graphql.InterfaceConfig{
 })
 var dogType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Dog",
-	Interfaces: []*graphql.Interface{
+	Interfaces: graphql.Interfaces{
 		namedType,
 	},
 	Fields: graphql.Fields{
@@ -57,7 +57,7 @@ var dogType = graphql.NewObject(graphql.ObjectConfig{
 })
 var catType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Cat",
-	Interfaces: []*graphql.Interface{
+	Interfaces: graphql.Interfaces{
 		namedType,
 	},
 	Fields: graphql.Fields{
@@ -90,7 +90,7 @@ var petType = graphql.NewUnion(graphql.UnionConfig{
 })
 var personType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Person",
-	Interfaces: []*graphql.Interface{
+	Interfaces: graphql.Interfaces{
 		namedType,
 	},
 	Fields: graphql.Fields{
@@ -521,7 +521,7 @@ func TestUnionIntersectionTypes_GetsExecutionInfoInResolver(t *testing.T) {
 
 	personType2 = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Person",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			namedType2,
 		},
 		Fields: graphql.Fields{
@@ -603,12 +603,12 @@ func TestUnionIntersectionTypes_ValueMayBeNilPointer(t *testing.T) {
 							},
 						},
 					}),
-					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(_ graphql.ResolveParams) (interface{}, error) {
 						return struct {
 							Pet   *testCat2 `graphql:"pet"`
 							Named *testCat2 `graphql:"named"`
 						}{nil, nil}, nil
-					},
+					}),
 				},
 			},
 		}),

@@ -468,10 +468,10 @@ func (rule *overlappingFieldsCanBeMergedRule) getFieldsAndFragmentNames(parentTy
 				}
 				var fieldDef *FieldDefinition
 				if parentType, ok := parentType.(*Object); ok && parentType != nil {
-					fieldDef, _ = parentType.Fields()[fieldName]
+					fieldDef = parentType.Field(fieldName)
 				}
 				if parentType, ok := parentType.(*Interface); ok && parentType != nil {
-					fieldDef, _ = parentType.Fields()[fieldName]
+					fieldDef = parentType.Field(fieldName)
 				}
 
 				responseName := fieldName

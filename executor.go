@@ -23,7 +23,7 @@ type ExecuteParams struct {
 	Context context.Context
 }
 
-func Execute(p ExecuteParams) (result *Result) {
+func Execute(p ExecuteParams) (result *Result, newCtx context.Context) {
 	// Use background context if no context was provided
 	ctx := p.Context
 	if ctx == nil {
@@ -58,7 +58,7 @@ func Execute(p ExecuteParams) (result *Result) {
 			return
 		}
 
-		result = executeOperation(executeOperationParams{
+		result, newCtx = executeOperation(executeOperationParams{
 			ExecutionContext: exeContext,
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
@@ -146,10 +146,10 @@ type executeOperationParams struct {
 	Operation        ast.Definition
 }
 
-func executeOperation(p executeOperationParams) *Result {
+func executeOperation(p executeOperationParams) (*Result, context.Context) {
 	operationType, err := getOperationRootType(p.ExecutionContext.Schema, p.Operation)
 	if err != nil {
-		return &Result{Errors: gqlerrors.FormatErrors(err)}
+		return &Result{Errors: gqlerrors.FormatErrors(err)}, p.ExecutionContext.Context
 	}
 
 	fields := collectFields(collectFieldsParams{
@@ -168,8 +168,7 @@ func executeOperation(p executeOperationParams) *Result {
 	if p.Operation.GetOperation() == ast.OperationTypeMutation {
 		return executeFieldsSerially(executeFieldsParams)
 	}
-	return executeFields(executeFieldsParams)
-
+	return executeFields(executeFieldsParams), p.ExecutionContext.Context
 }
 
 // Extracts the root type of the operation from the schema.
@@ -228,7 +227,7 @@ type executeFieldsParams struct {
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "write" mode.
-func executeFieldsSerially(p executeFieldsParams) *Result {
+func executeFieldsSerially(p executeFieldsParams) (*Result, context.Context) {
 	if p.Source == nil {
 		p.Source = map[string]interface{}{}
 	}
@@ -239,18 +238,22 @@ func executeFieldsSerially(p executeFieldsParams) *Result {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		fieldPath := p.Path.WithKey(responseName)
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
+		resolved, ctx, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
 		if state.hasNoFieldDefs {
 			continue
 		}
 		finalResults[responseName] = resolved
+		if ctx != nil && ctx != p.ExecutionContext.Context {
+			// FIXME: cover up sibling's context?
+			p.ExecutionContext.Context = ctx
+		}
 	}
 	dethunkMapDepthFirst(finalResults)
 
 	return &Result{
 		Data:   finalResults,
 		Errors: p.ExecutionContext.Errors,
-	}
+	}, p.ExecutionContext.Context
 }
 
 // Implements the "Evaluating selection sets" section of the spec for "read" mode.
@@ -276,11 +279,15 @@ func executeSubFields(p executeFieldsParams) map[string]interface{} {
 	finalResults := make(map[string]interface{}, len(p.Fields))
 	for responseName, fieldASTs := range p.Fields {
 		fieldPath := p.Path.WithKey(responseName)
-		resolved, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
+		resolved, ctx, state := resolveField(p.ExecutionContext, p.ParentType, p.Source, fieldASTs, fieldPath)
 		if state.hasNoFieldDefs {
 			continue
 		}
 		finalResults[responseName] = resolved
+		if ctx != nil && ctx != p.ExecutionContext.Context {
+			// FIXME: cover up sibling's context?
+			p.ExecutionContext.Context = ctx
+		}
 	}
 
 	return finalResults
@@ -572,7 +579,7 @@ func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, 
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
 // the sub-selection-set for objects.
-func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, resultState resolveFieldResultState) {
+func resolveField(eCtx *executionContext, parentType *Object, source interface{}, fieldASTs []*ast.Field, path *ResponsePath) (result interface{}, ctx context.Context, resultState resolveFieldResultState) {
 	// catch panic from resolveFn
 	var returnType Output
 	defer func() (interface{}, resolveFieldResultState) {
@@ -592,12 +599,12 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	fieldDef := getFieldDef(eCtx.Schema, parentType, fieldName)
 	if fieldDef == nil {
 		resultState.hasNoFieldDefs = true
-		return nil, resultState
+		return nil, eCtx.Context, resultState
 	}
 	returnType = fieldDef.Type
 	resolveFn := fieldDef.Resolve
 	if resolveFn == nil {
-		resolveFn = DefaultResolveFn
+		resolveFn = ResolveField(DefaultResolveFn)
 	}
 
 	// Build a map of arguments from the field.arguments AST, using the
@@ -633,8 +640,16 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		}
 	}
 
-	var resolveFnError error
-	result, resolveFnError = resolveFn(params)
+	var (
+		resolveFnError error
+		newCtx         context.Context
+	)
+	if fn, ok := resolveFn.(ResolveField); ok {
+		result, resolveFnError = fn(params)
+		newCtx = eCtx.Context
+	} else if withContext, ok := resolveFn.(ResolveFieldWithContext); ok {
+		result, newCtx, resolveFnError = withContext(params)
+	}
 
 	if resolveFnError != nil {
 		panic(resolveFnError)
@@ -648,7 +663,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 	}
 
 	completed := completeValueCatchingError(eCtx, returnType, fieldASTs, info, path, result)
-	return completed, resultState
+	return completed, newCtx, resultState
 }
 
 func completeValueCatchingError(eCtx *executionContext, returnType Type, fieldASTs []*ast.Field, info ResolveInfo, path *ResponsePath, result interface{}) (completed interface{}) {
@@ -1008,5 +1023,5 @@ func getFieldDef(schema Schema, parentType *Object, fieldName string) *FieldDefi
 	if fieldName == TypeNameMetaFieldDef.Name {
 		return TypeNameMetaFieldDef
 	}
-	return parentType.Fields()[fieldName]
+	return parentType.Field(fieldName)
 }

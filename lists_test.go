@@ -27,9 +27,9 @@ func checkList(t *testing.T, testType graphql.Type, testData interface{}, expect
 	})
 	dataType.AddFieldConfig("nest", &graphql.Field{
 		Type: dataType,
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 			return data, nil
-		},
+		}),
 	})
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -888,9 +888,9 @@ func TestLists_ValueMayBeNilPointer(t *testing.T) {
 			Fields: graphql.Fields{
 				"list": &graphql.Field{
 					Type: graphql.NewList(graphql.Int),
-					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(_ graphql.ResolveParams) (interface{}, error) {
 						return []int(nil), nil
-					},
+					}),
 				},
 			},
 		}),

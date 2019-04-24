@@ -259,12 +259,10 @@ func DefaultTypeInfoFieldDef(schema *Schema, parentType Type, fieldAST *ast.Fiel
 	}
 
 	if parentType, ok := parentType.(*Object); ok && parentType != nil {
-		field, _ := parentType.Fields()[name]
-		return field
+		return parentType.Field(name)
 	}
 	if parentType, ok := parentType.(*Interface); ok && parentType != nil {
-		field, _ := parentType.Fields()[name]
-		return field
+		return parentType.Field(name)
 	}
 	return nil
 }

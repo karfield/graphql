@@ -59,7 +59,7 @@ func ValidateDocument(schema *Schema, astDoc *ast.Document, rules []ValidationRu
 func VisitUsingRules(schema *Schema, typeInfo *TypeInfo, astDoc *ast.Document, rules []ValidationRuleFn) []gqlerrors.FormattedError {
 
 	context := NewValidationContext(schema, astDoc, typeInfo)
-	visitors := []*visitor.VisitorOptions{}
+	var visitors []*visitor.VisitorOptions
 
 	for _, rule := range rules {
 		instance := rule(context)

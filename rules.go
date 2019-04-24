@@ -232,7 +232,7 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 							suggestedTypeNames := getSuggestedTypeNames(context.Schema(), ttype, nodeName)
 
 							// If there are no suggested types, then perhaps this was a typo?
-							suggestedFieldNames := []string{}
+							var suggestedFieldNames []string
 							if len(suggestedTypeNames) == 0 {
 								suggestedFieldNames = getSuggestedFieldNames(context.Schema(), ttype, nodeName)
 							}
@@ -259,8 +259,8 @@ func FieldsOnCorrectTypeRule(context *ValidationContext) *ValidationRuleInstance
 // with Interfaces.
 func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []string {
 	var (
-		suggestedObjectTypes = []string{}
-		suggestedInterfaces  = []*suggestedInterface{}
+		suggestedObjectTypes []string
+		suggestedInterfaces  []*suggestedInterface
 		// stores a map of interface name => index in suggestedInterfaces
 		suggestedInterfaceMap = map[string]int{}
 		// stores a maps of object name => true to remove duplicates from results
@@ -269,7 +269,7 @@ func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []str
 	possibleTypes := schema.PossibleTypes(ttype)
 
 	for _, possibleType := range possibleTypes {
-		if field, ok := possibleType.Fields()[fieldName]; !ok || field == nil {
+		if field := possibleType.Field(fieldName); field == nil {
 			continue
 		}
 		// This object type defines this field.
@@ -277,7 +277,7 @@ func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []str
 		suggestedObjectMap[possibleType.Name()] = true
 
 		for _, possibleInterface := range possibleType.Interfaces() {
-			if field, ok := possibleInterface.Fields()[fieldName]; !ok || field == nil {
+			if field := possibleInterface.Field(fieldName); field == nil {
 				continue
 			}
 
@@ -310,7 +310,7 @@ func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []str
 	// return concatenated slices of both interface and object type names
 	// and removing duplicates
 	// ordered by: interface (sorted) and object (sorted)
-	results := []string{}
+	var results []string
 	for _, s := range suggestedInterfaces {
 		if _, ok := suggestedObjectMap[s.name]; !ok {
 			results = append(results, s.name)
@@ -325,7 +325,7 @@ func getSuggestedTypeNames(schema *Schema, ttype Output, fieldName string) []str
 // that may be the result of a typo.
 func getSuggestedFieldNames(schema *Schema, ttype Output, fieldName string) []string {
 
-	fields := FieldDefinitionMap{}
+	fields := FieldDefinitionList{}
 	switch ttype := ttype.(type) {
 	case *Object:
 		fields = ttype.Fields()
@@ -335,9 +335,9 @@ func getSuggestedFieldNames(schema *Schema, ttype Output, fieldName string) []st
 		return []string{}
 	}
 
-	possibleFieldNames := []string{}
-	for possibleFieldName := range fields {
-		possibleFieldNames = append(possibleFieldNames, possibleFieldName)
+	var possibleFieldNames []string
+	for _, field := range fields {
+		possibleFieldNames = append(possibleFieldNames, field.Name)
 	}
 	return suggestionList(fieldName, possibleFieldNames)
 }
@@ -869,7 +869,7 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 			} else {
 				cyclePath := spreadPath[cycleIndex:]
 
-				spreadNames := []string{}
+				var spreadNames []string
 				for _, s := range cyclePath {
 					name := ""
 					if s.Name != nil {
@@ -878,7 +878,7 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 					spreadNames = append(spreadNames, name)
 				}
 
-				nodes := []ast.Node{}
+				var nodes []ast.Node
 				for _, c := range cyclePath {
 					nodes = append(nodes, c)
 				}

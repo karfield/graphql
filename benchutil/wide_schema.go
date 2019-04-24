@@ -18,13 +18,13 @@ func WideSchemaWithXFieldsAndYItems(x int, y int) graphql.Schema {
 		Fields: graphql.Fields{
 			"wide": {
 				Type: graphql.NewList(wide),
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					out := make([]struct{}, 0, y)
 					for i := 0; i < y; i++ {
 						out = append(out, struct{}{})
 					}
 					return out, nil
-				},
+				}),
 			},
 		},
 	})
@@ -47,7 +47,7 @@ func generateXWideFields(x int) graphql.Fields {
 func generateWideFieldFromX(x int) *graphql.Field {
 	return &graphql.Field{
 		Type:    generateWideTypeFromX(x),
-		Resolve: generateWideResolveFromX(x),
+		Resolve: graphql.ResolveField(generateWideResolveFromX(x)),
 	}
 }
 

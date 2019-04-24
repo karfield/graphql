@@ -83,14 +83,14 @@ func main() {
 							Type: CustomScalarType,
 						},
 					},
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						// id := p.Args["id"]
 						// log.Printf("id from arguments: %+v", id)
 						customers := []Customer{
 							Customer{ID: NewCustomID("fb278f2a4a13f")},
 						}
 						return customers, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -123,7 +123,7 @@ func main() {
 			}
 		`
 	*/
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 		VariableValues: map[string]interface{}{

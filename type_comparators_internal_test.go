@@ -135,7 +135,7 @@ func TestIsTypeSubTypeOf_ImplementationIsSubtypeOfInterface(t *testing.T) {
 		IsTypeOf: func(p IsTypeOfParams) bool {
 			return true
 		},
-		Interfaces: []*Interface{ifaceType},
+		Interfaces: Interfaces{ifaceType},
 		Fields: Fields{
 			"field": &Field{Type: String},
 		},

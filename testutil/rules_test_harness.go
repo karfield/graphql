@@ -119,7 +119,7 @@ func init() {
 				},
 			},
 		},
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			beingInterface,
 			petInterface,
 			canineInterface,
@@ -170,7 +170,7 @@ func init() {
 				Type: furColorEnum,
 			},
 		},
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			beingInterface,
 			petInterface,
 		},
@@ -196,7 +196,7 @@ func init() {
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			beingInterface,
 			intelligentInterface,
 		},
@@ -227,7 +227,7 @@ func init() {
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			beingInterface,
 			intelligentInterface,
 		},

@@ -158,7 +158,7 @@ func schemaWithObjectImplementingType(implementedType *graphql.Interface) (graph
 
 	badObjectType := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "BadObject",
-		Interfaces: []*graphql.Interface{implementedType},
+		Interfaces: graphql.Interfaces{implementedType},
 		Fields: graphql.Fields{
 			"f": &graphql.Field{
 				Type: graphql.String,
@@ -400,7 +400,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 	})
 	FirstBadObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			anotherInterface,
 		},
 		Fields: graphql.Fields{
@@ -411,7 +411,7 @@ func TestTypeSystem_SchemaMustContainUniquelyNamedTypes_RejectsASchemaWhichHaveS
 	})
 	SecondBadObject := graphql.NewObject(graphql.ObjectConfig{
 		Name: "BadObject",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			anotherInterface,
 		},
 		Fields: graphql.Fields{
@@ -559,8 +559,8 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithArrayInte
 	})
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name: "SomeObject",
-		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
-			return []*graphql.Interface{anotherInterfaceType}
+		Interfaces: (graphql.InterfacesThunk)(func() graphql.Interfaces {
+			return graphql.Interfaces{anotherInterfaceType}
 		}),
 		Fields: graphql.Fields{
 			"f": &graphql.Field{
@@ -587,7 +587,7 @@ func TestTypeSystem_ObjectInterfacesMustBeArray_AcceptsAnObjectTypeWithInterface
 	})
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*graphql.Interface{anotherInterfaceType},
+		Interfaces: graphql.Interfaces{anotherInterfaceType},
 		Fields: graphql.Fields{
 			"f": &graphql.Field{
 				Type: graphql.String,
@@ -721,7 +721,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 	})
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*graphql.Interface{anotherInterfaceType},
+		Interfaces: graphql.Interfaces{anotherInterfaceType},
 		Fields: graphql.Fields{
 			"f": &graphql.Field{
 				Type: graphql.String,
@@ -744,7 +744,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceWithImpleme
 	})
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*graphql.Interface{anotherInterfaceType},
+		Interfaces: graphql.Interfaces{anotherInterfaceType},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
@@ -774,7 +774,7 @@ func TestTypeSystem_InterfaceTypesMustBeResolvable_AcceptsAnInterfaceTypeDefinin
 	})
 	_, err := schemaWithFieldType(graphql.NewObject(graphql.ObjectConfig{
 		Name:       "SomeObject",
-		Interfaces: []*graphql.Interface{anotherInterfaceType},
+		Interfaces: graphql.Interfaces{anotherInterfaceType},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
@@ -1139,7 +1139,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1175,7 +1175,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1214,7 +1214,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWhi
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1253,7 +1253,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWhi
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1293,7 +1293,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"anotherfield": &graphql.Field{
 				Type: graphql.String,
@@ -1321,7 +1321,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: someScalarType,
@@ -1367,7 +1367,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: typeB,
@@ -1399,7 +1399,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 	var anotherObject *graphql.Object
 	anotherObject = graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: (graphql.FieldsThunk)(func() graphql.Fields {
 			return graphql.Fields{
 				"field": &graphql.Field{
@@ -1427,7 +1427,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: someObjectType,
@@ -1458,7 +1458,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectMis
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1490,7 +1490,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1522,7 +1522,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.NewList(graphql.String)),
@@ -1548,7 +1548,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,
@@ -1576,7 +1576,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.NewList(graphql.String),
@@ -1604,7 +1604,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_AcceptsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.NewNonNull(graphql.String),
@@ -1631,7 +1631,7 @@ func TestTypeSystem_ObjectsMustAdhereToInterfaceTheyImplement_RejectsAnObjectWit
 	})
 	anotherObject := graphql.NewObject(graphql.ObjectConfig{
 		Name:       "AnotherObject",
-		Interfaces: []*graphql.Interface{anotherInterface},
+		Interfaces: graphql.Interfaces{anotherInterface},
 		Fields: graphql.Fields{
 			"field": &graphql.Field{
 				Type: graphql.String,

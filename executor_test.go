@@ -106,7 +106,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 	}
 
 	// Schema Definitions
-	picResolverFn := func(p graphql.ResolveParams) (interface{}, error) {
+	picResolverFn := graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 		// get and type assert ResolveFn for this field
 		picResolver, ok := p.Source.(map[string]interface{})["pic"].(func(size int) string)
 		if !ok {
@@ -118,7 +118,7 @@ func TestExecutesArbitraryCode(t *testing.T) {
 			return nil, nil
 		}
 		return picResolver(sizeArg), nil
-	}
+	})
 	dataType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "DataType",
 		Fields: graphql.Fields{
@@ -247,29 +247,29 @@ func TestMergesParallelFragments(t *testing.T) {
 		Fields: graphql.Fields{
 			"a": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "Apple", nil
-				},
+				}),
 			},
 			"b": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "Banana", nil
-				},
+				}),
 			},
 			"c": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "Cherry", nil
-				},
+				}),
 			},
 		},
 	})
 	deepTypeFieldConfig := &graphql.Field{
 		Type: typeObjectType,
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 			return p.Source, nil
-		},
+		}),
 	}
 	typeObjectType.AddFieldConfig("deep", deepTypeFieldConfig)
 
@@ -315,10 +315,10 @@ func TestThreadsSourceCorrectly(t *testing.T) {
 			Fields: graphql.Fields{
 				"a": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						resolvedSource = p.Source.(map[string]interface{})
 						return resolvedSource, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -371,10 +371,10 @@ func TestCorrectlyThreadsArguments(t *testing.T) {
 						},
 					},
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						resolvedArgs = p.Args
 						return resolvedArgs, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -418,10 +418,10 @@ func TestThreadsRootValueContextCorrectly(t *testing.T) {
 			Fields: graphql.Fields{
 				"a": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						val, _ := p.Info.RootValue.(map[string]interface{})["stringKey"].(string)
 						return val, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -468,9 +468,9 @@ func TestThreadsContextCorrectly(t *testing.T) {
 			Fields: graphql.Fields{
 				"a": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return p.Context.Value("foo"), nil
-					},
+					}),
 				},
 			},
 		}),
@@ -1239,10 +1239,10 @@ func TestDoesNotIncludeArgumentsThatWereNotSet(t *testing.T) {
 							Type: graphql.Int,
 						},
 					},
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						args, _ := json.Marshal(p.Args)
 						return string(args), nil
-					},
+					}),
 				},
 			},
 		}),
@@ -1322,9 +1322,9 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 		Fields: graphql.Fields{
 			"value": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return p.Source.(testSpecialType).Value, nil
-				},
+				}),
 			},
 		},
 	})
@@ -1334,9 +1334,9 @@ func TestFailsWhenAnIsTypeOfCheckIsNotMet(t *testing.T) {
 			Fields: graphql.Fields{
 				"specials": &graphql.Field{
 					Type: graphql.NewList(specialType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return p.Source.(map[string]interface{})["specials"], nil
-					},
+					}),
 				},
 			},
 		}),
@@ -1412,15 +1412,15 @@ func TestQuery_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 		Fields: graphql.Fields{
 			"a": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return nil, qError
-				},
+				}),
 			},
 			"b": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "ok", nil
-				},
+				}),
 			},
 		},
 	})
@@ -1431,7 +1431,7 @@ func TestQuery_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "{ a }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        blogSchema,
 		RequestString: query,
 	})
@@ -1450,15 +1450,15 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		Fields: graphql.Fields{
 			"a": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return nil, qError
-				},
+				}),
 			},
 			"b": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "ok", nil
-				},
+				}),
 			},
 		},
 	})
@@ -1469,7 +1469,7 @@ func TestQuery_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "{ b }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        blogSchema,
 		RequestString: query,
 	})
@@ -1498,7 +1498,7 @@ func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
 						Type: graphql.NewNonNull(inputType),
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					val := p.Args["foo"].(map[string]interface{})
 					def, ok := val["default"]
 					if !ok || def == nil {
@@ -1508,7 +1508,7 @@ func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
 						return nil, errors.New("queryError: 'default' param has wrong value")
 					}
 					return "ok", nil
-				},
+				}),
 			},
 		},
 	})
@@ -1519,7 +1519,7 @@ func TestQuery_InputObjectUsesFieldDefaultValueFn(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := `{ a(foo: {}) }`
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1548,9 +1548,9 @@ func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return nil, mError
-				},
+				}),
 			},
 			"bar": &graphql.Field{
 				Type: graphql.String,
@@ -1559,9 +1559,9 @@ func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "ok", nil
-				},
+				}),
 			},
 		},
 	})
@@ -1573,7 +1573,7 @@ func TestMutation_ExecutionAddsErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "mutation _ { newFoo: foo(f:\"title\") }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1605,9 +1605,9 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return nil, mError
-				},
+				}),
 			},
 			"bar": &graphql.Field{
 				Type: graphql.String,
@@ -1616,9 +1616,9 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return "ok", nil
-				},
+				}),
 			},
 		},
 	})
@@ -1630,7 +1630,7 @@ func TestMutation_ExecutionDoesNotAddErrorsFromFieldResolveFn(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "mutation _ { newBar: bar(b:\"title\") }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1649,12 +1649,12 @@ func TestGraphqlTag(t *testing.T) {
 	var baz = &graphql.Field{
 		Type:        typeObjectType,
 		Description: "typeObjectType",
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 			t := struct {
 				FooBar string `graphql:"fooBar"`
 			}{"foo bar value"}
 			return t, nil
-		},
+		}),
 	}
 	q := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
@@ -1669,7 +1669,7 @@ func TestGraphqlTag(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "{ baz { fooBar } }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1696,16 +1696,16 @@ func TestFieldResolver(t *testing.T) {
 	var baz = &graphql.Field{
 		Type:        typeObjectType,
 		Description: "typeObjectType",
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 			return testCustomResolver{}, nil
-		},
+		}),
 	}
 	var bazPtr = &graphql.Field{
 		Type:        typeObjectType,
 		Description: "typeObjectType",
-		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+		Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 			return &testCustomResolver{}, nil
-		},
+		}),
 	}
 	q := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Query",
@@ -1721,7 +1721,7 @@ func TestFieldResolver(t *testing.T) {
 		t.Fatalf("unexpected error, got: %v", err)
 	}
 	query := "{ baz { fooBar }, bazPtr { fooBar } }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1767,10 +1767,10 @@ func TestContextDeadline(t *testing.T) {
 			Fields: graphql.Fields{
 				"hello": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						time.Sleep(2 * time.Second)
 						return "world", nil
-					},
+					}),
 				},
 			},
 		})
@@ -1785,7 +1785,7 @@ func TestContextDeadline(t *testing.T) {
 	defer cancel()
 
 	startTime := time.Now()
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: "{hello}",
 		Context:       ctx,
@@ -1821,7 +1821,7 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 		Fields: graphql.Fields{
 			"bar": &graphql.Field{
 				Type: barType,
-				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 					var bar struct {
 						BazA string
 						BazB string
@@ -1831,7 +1831,7 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 
 					thunk := func() (interface{}, error) { return &bar, nil }
 					return thunk, nil
-				},
+				}),
 			},
 		},
 	})
@@ -1841,10 +1841,10 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 		Fields: graphql.Fields{
 			"foo": &graphql.Field{
 				Type: fooType,
-				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 					var foo struct{}
 					return foo, nil
-				},
+				}),
 			},
 		},
 	})
@@ -1861,7 +1861,7 @@ func TestThunkResultsProcessedCorrectly(t *testing.T) {
 	expectNoError(err)
 
 	query := "{ foo { bar { bazA bazB } } }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -1903,12 +1903,12 @@ func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
 			},
 			"bazC": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					thunk := func() (interface{}, error) {
 						return nil, bazCError
 					}
 					return thunk, nil
-				},
+				}),
 			},
 		},
 	})
@@ -1918,7 +1918,7 @@ func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
 		Fields: graphql.Fields{
 			"bar": &graphql.Field{
 				Type: barType,
-				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 					var bar struct {
 						BazA string
 						BazB string
@@ -1930,7 +1930,7 @@ func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
 						return &bar, nil
 					}
 					return thunk, nil
-				},
+				}),
 			},
 		},
 	})
@@ -1940,10 +1940,10 @@ func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
 		Fields: graphql.Fields{
 			"foo": &graphql.Field{
 				Type: fooType,
-				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 					var foo struct{}
 					return foo, nil
-				},
+				}),
 			},
 		},
 	})
@@ -1957,7 +1957,7 @@ func TestThunkErrorsAreHandledCorrectly(t *testing.T) {
 	}
 
 	query := "{ foo { bar { bazA bazB bazC } } }"
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -2050,7 +2050,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
 		},
 		"name": &graphql.Field{
 			Type: nameType,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				hero := p.Source.(Hero)
 				if hero.Name != "" {
 					return hero.Name, nil
@@ -2068,7 +2068,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
 					}
 				}
 				return nil, err
-			},
+			}),
 		},
 		"friends": &graphql.Field{
 			Type: graphql.NewList(heroType),
@@ -2080,7 +2080,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
 		Fields: graphql.Fields{
 			"hero": &graphql.Field{
 				Type: heroType,
-				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 					return Hero{
 						Name: "R2-D2",
 						Friends: []Hero{
@@ -2089,7 +2089,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
 							{Id: "1003", Name: "Leia Organa"},
 						},
 					}, nil
-				},
+				}),
 			},
 		},
 	})
@@ -2105,7 +2105,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
 	})
 	expectNoError(err)
 
-	return graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema: schema,
 		RequestString: `{
   hero {
@@ -2117,6 +2117,7 @@ func testErrors(t *testing.T, nameType graphql.Output, extensions map[string]int
   }
 }`,
 	})
+	return result
 }
 
 // http://facebook.github.io/graphql/June2018/#example-bc485

@@ -38,7 +38,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 	// ie declare that Dog belongs to Pet interface
 	dogType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Dog",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			petType,
 		},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
@@ -48,28 +48,28 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Fields: graphql.Fields{
 			"name": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Name, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"woofs": &graphql.Field{
 				Type: graphql.Boolean,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Woofs, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
 	})
 	// ie declare that Cat belongs to Pet interface
 	catType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Cat",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			petType,
 		},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
@@ -79,21 +79,21 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Fields: graphql.Fields{
 			"name": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Name, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"meows": &graphql.Field{
 				Type: graphql.Boolean,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Meows, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
 	})
@@ -103,12 +103,12 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 			Fields: graphql.Fields{
 				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
 						}, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -146,7 +146,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForInterface(t *testing.T) {
 		Errors: nil,
 	}
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -172,7 +172,7 @@ func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
 	// ie declare that Dog belongs to Pet interface
 	dogType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Dog",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			petType,
 		},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
@@ -182,28 +182,28 @@ func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
 		Fields: graphql.Fields{
 			"name": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Name, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"woofs": &graphql.Field{
 				Type: graphql.Boolean,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if dog, ok := p.Source.(*testDog); ok {
 						return dog.Woofs, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
 	})
 	// ie declare that Cat belongs to Pet interface
 	catType := graphql.NewObject(graphql.ObjectConfig{
 		Name: "Cat",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			petType,
 		},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
@@ -213,21 +213,21 @@ func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
 		Fields: graphql.Fields{
 			"name": &graphql.Field{
 				Type: graphql.String,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Name, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"meows": &graphql.Field{
 				Type: graphql.Boolean,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if cat, ok := p.Source.(*testCat); ok {
 						return cat.Meows, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
 	})
@@ -237,12 +237,12 @@ func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
 			Fields: graphql.Fields{
 				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
 						}, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -283,7 +283,7 @@ func TestAppendTypeUsedToAddRuntimeCustomScalarTypeForInterface(t *testing.T) {
 		Errors: nil,
 	}
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -340,12 +340,12 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 			Fields: graphql.Fields{
 				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
 						}, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -383,7 +383,7 @@ func TestIsTypeOfUsedToResolveRuntimeTypeForUnion(t *testing.T) {
 		Errors: nil,
 	}
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -431,7 +431,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	})
 	dogType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Dog",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			petType,
 		},
 		Fields: graphql.Fields{
@@ -445,7 +445,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 	})
 	catType = graphql.NewObject(graphql.ObjectConfig{
 		Name: "Cat",
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			petType,
 		},
 		Fields: graphql.Fields{
@@ -463,13 +463,13 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 			Fields: graphql.Fields{
 				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
 							&testHuman{"Jon"},
 						}, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -522,7 +522,7 @@ func TestResolveTypeOnInterfaceYieldsUsefulError(t *testing.T) {
 		},
 	}
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -587,13 +587,13 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 			Fields: graphql.Fields{
 				"pets": &graphql.Field{
 					Type: graphql.NewList(petType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return []interface{}{
 							&testDog{"Odie", true},
 							&testCat{"Garfield", false},
 							&testHuman{"Jon"},
 						}, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -646,7 +646,7 @@ func TestResolveTypeOnUnionYieldsUsefulError(t *testing.T) {
 		},
 	}
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

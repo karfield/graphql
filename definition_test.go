@@ -155,7 +155,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("expected blogSchema.GetQueryType() == blogQuery")
 	}
 
-	articleField, _ := blogQuery.Fields()["article"]
+	articleField := blogQuery.Field("article")
 	if articleField == nil {
 		t.Fatalf("articleField is nil")
 	}
@@ -174,8 +174,8 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("expected articleFieldType to be graphql.Object`, got: %v", articleField)
 	}
 
-	// TODO: expose a Object.GetField(key string), instead of this ghetto way of accessing a field map?
-	titleField := articleFieldTypeObject.Fields()["title"]
+	// TODO: expose a Object.Field(key string), instead of this ghetto way of accessing a field map?
+	titleField := articleFieldTypeObject.Field("title")
 	if titleField == nil {
 		t.Fatalf("titleField is nil")
 	}
@@ -189,7 +189,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("titleField.Type.GetName() expected to equal `String`, got: %v", titleField.Type.Name())
 	}
 
-	authorField := articleFieldTypeObject.Fields()["author"]
+	authorField := articleFieldTypeObject.Field("author")
 	if authorField == nil {
 		t.Fatalf("authorField is nil")
 	}
@@ -198,7 +198,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("expected authorField.Type to be Object`, got: %v", authorField)
 	}
 
-	recentArticleField := authorFieldObject.Fields()["recentArticle"]
+	recentArticleField := authorFieldObject.Field("recentArticle")
 	if recentArticleField == nil {
 		t.Fatalf("recentArticleField is nil")
 	}
@@ -206,7 +206,7 @@ func TestTypeSystem_DefinitionExample_DefinesAQueryOnlySchema(t *testing.T) {
 		t.Fatalf("recentArticleField.Type expected to equal blogArticle, got: %v", recentArticleField.Type)
 	}
 
-	feedField := blogQuery.Fields()["feed"]
+	feedField := blogQuery.Field("feed")
 	feedFieldList, ok := feedField.Type.(*graphql.List)
 	if !ok {
 		t.Fatalf("expected feedFieldList to be List`, got: %v", authorField)
@@ -232,7 +232,7 @@ func TestTypeSystem_DefinitionExample_DefinesAMutationScheme(t *testing.T) {
 		t.Fatalf("expected blogSchema.GetMutationType() == blogMutation")
 	}
 
-	writeMutation, _ := blogMutation.Fields()["writeArticle"]
+	writeMutation := blogMutation.Field("writeArticle")
 	if writeMutation == nil {
 		t.Fatalf("writeMutation is nil")
 	}
@@ -261,7 +261,7 @@ func TestTypeSystem_DefinitionExample_DefinesASubscriptionScheme(t *testing.T) {
 		t.Fatalf("expected blogSchema.SubscriptionType() == blogSubscription")
 	}
 
-	subMutation, _ := blogSubscription.Fields()["articleSubscribe"]
+	subMutation := blogSubscription.Field("articleSubscribe")
 	if subMutation == nil {
 		t.Fatalf("subMutation is nil")
 	}
@@ -351,7 +351,7 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesSubTypesInTheTypeMap(t *
 				Type: graphql.Int,
 			},
 		},
-		Interfaces: []*graphql.Interface{someInterface},
+		Interfaces: graphql.Interfaces{someInterface},
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
 		},
@@ -393,8 +393,8 @@ func TestTypeSystem_DefinitionExample_IncludesInterfacesThunkSubtypesInTheTypeMa
 				Type: graphql.Int,
 			},
 		},
-		Interfaces: (graphql.InterfacesThunk)(func() []*graphql.Interface {
-			return []*graphql.Interface{someInterface}
+		Interfaces: graphql.InterfacesThunk(func() graphql.Interfaces {
+			return graphql.Interfaces{someInterface}
 		}),
 		IsTypeOf: func(p graphql.IsTypeOfParams) bool {
 			return true
@@ -614,9 +614,9 @@ func TestTypeSystem_DefinitionExample_IncludesFieldsThunk(t *testing.T) {
 			}
 		}),
 	})
-	fieldMap := someObject.Fields()
-	if !reflect.DeepEqual(fieldMap["s"].Type, someObject) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["s"].Type, someObject))
+	field := someObject.Field("s")
+	if !reflect.DeepEqual(field.Type, someObject) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(field.Type, someObject))
 	}
 }
 
@@ -635,9 +635,8 @@ func TestTypeSystem_DefinitionExampe_AllowsCyclicFieldTypes(t *testing.T) {
 		}),
 	})
 
-	fieldMap := personType.Fields()
-	if !reflect.DeepEqual(fieldMap["name"].Type, graphql.String) {
-		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(fieldMap["bestFriend"].Type, personType))
+	if !reflect.DeepEqual(personType.Field("name").Type, graphql.String) {
+		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(personType.Field("bestFriend").Type, personType))
 	}
 
 }

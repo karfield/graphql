@@ -48,7 +48,7 @@ func filterUser(data []map[string]interface{}, args map[string]interface{}) map[
 }
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -98,9 +98,9 @@ func importJSONDataFromFile(fileName string) error {
 				"user": &graphql.Field{
 					Type: userType,
 					Args: args,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return filterUser(data, p.Args), nil
-					},
+					}),
 				},
 			},
 		})

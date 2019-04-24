@@ -18,7 +18,7 @@ var UserType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"id": &graphql.Field{
 			Type: graphql.Int,
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				rootValue := p.Info.RootValue.(map[string]interface{})
 				if rootValue["data-from-parent"] == "ok" &&
 					rootValue["data-before-execution"] == "ok" {
@@ -26,7 +26,7 @@ var UserType = graphql.NewObject(graphql.ObjectConfig{
 					return user.ID, nil
 				}
 				return nil, nil
-			},
+			}),
 		},
 	},
 })
@@ -38,7 +38,7 @@ func main() {
 			Fields: graphql.Fields{
 				"users": &graphql.Field{
 					Type: graphql.NewList(UserType),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						rootValue := p.Info.RootValue.(map[string]interface{})
 						rootValue["data-from-parent"] = "ok"
 						result := []User{
@@ -46,7 +46,7 @@ func main() {
 						}
 						return result, nil
 
-					},
+					}),
 				},
 			},
 		}),
@@ -61,7 +61,7 @@ func main() {
 	rootObject := map[string]interface{}{
 		"data-before-execution": "ok",
 	}
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Context:       ctx,
 		RequestString: "{ users { id } }",
 		RootObject:    rootObject,

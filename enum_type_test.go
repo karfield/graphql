@@ -40,7 +40,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				if fromInt, ok := p.Args["fromInt"]; ok {
 					return fromInt, nil
 				}
@@ -51,7 +51,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					return fromEnum, nil
 				}
 				return nil, nil
-			},
+			}),
 		},
 		"colorInt": &graphql.Field{
 			Type: graphql.Int,
@@ -63,7 +63,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.Int,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				if fromInt, ok := p.Args["fromInt"]; ok {
 					return fromInt, nil
 				}
@@ -71,7 +71,7 @@ var enumTypeTestQueryType = graphql.NewObject(graphql.ObjectConfig{
 					return fromEnum, nil
 				}
 				return nil, nil
-			},
+			}),
 		},
 	},
 })
@@ -85,12 +85,12 @@ var enumTypeTestMutationType = graphql.NewObject(graphql.ObjectConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				if color, ok := p.Args["color"]; ok {
 					return color, nil
 				}
 				return nil, nil
-			},
+			}),
 		},
 	},
 })
@@ -105,12 +105,12 @@ var enumTypeTestSubscriptionType = graphql.NewObject(graphql.ObjectConfig{
 					Type: enumTypeTestColorType,
 				},
 			},
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 				if color, ok := p.Args["color"]; ok {
 					return color, nil
 				}
 				return nil, nil
-			},
+			}),
 		},
 	},
 })
@@ -396,13 +396,13 @@ func TestTypeSystem_EnumValues_EnumValueMayBePointer(t *testing.T) {
 							},
 						},
 					}),
-					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(_ graphql.ResolveParams) (interface{}, error) {
 						one := 1
 						return struct {
 							Color *int `graphql:"color"`
 							Foo   *int `graphql:"foo"`
 						}{&one, &one}, nil
-					},
+					}),
 				},
 			},
 		}),
@@ -436,11 +436,11 @@ func TestTypeSystem_EnumValues_EnumValueMayBeNilPointer(t *testing.T) {
 							},
 						},
 					}),
-					Resolve: func(_ graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(_ graphql.ResolveParams) (interface{}, error) {
 						return struct {
 							Color *int `graphql:"color"`
 						}{nil}, nil
-					},
+					}),
 				},
 			},
 		}),

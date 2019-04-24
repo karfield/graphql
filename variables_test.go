@@ -65,7 +65,7 @@ var testNestedInputObject *graphql.InputObject = graphql.NewInputObject(graphql.
 	},
 })
 
-func inputResolved(p graphql.ResolveParams) (interface{}, error) {
+var inputResolved = graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 	input, ok := p.Args["input"]
 	if !ok {
 		return nil, nil
@@ -75,7 +75,7 @@ func inputResolved(p graphql.ResolveParams) (interface{}, error) {
 		return nil, nil
 	}
 	return string(b), nil
-}
+})
 
 var testType *graphql.Object = graphql.NewObject(graphql.ObjectConfig{
 	Name: "TestType",

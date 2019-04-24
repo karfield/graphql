@@ -32,9 +32,9 @@ var queryType = graphql.NewObject(
 		Fields: graphql.Fields{
 			"me": &graphql.Field{
 				Type: userType,
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return p.Context.Value("currentUser"), nil
-				},
+				}),
 			},
 		},
 	})
@@ -44,7 +44,7 @@ func graphqlHandler(w http.ResponseWriter, r *http.Request) {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
 	}{1, "cool user"}
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        Schema,
 		RequestString: r.URL.Query().Get("query"),
 		Context:       context.WithValue(context.Background(), "currentUser", user),

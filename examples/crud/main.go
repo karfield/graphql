@@ -54,7 +54,7 @@ var queryType = graphql.NewObject(
 						Type: graphql.Int,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					id, ok := p.Args["id"].(int)
 					if ok {
 						// Find product
@@ -65,7 +65,7 @@ var queryType = graphql.NewObject(
 						}
 					}
 					return nil, nil
-				},
+				}),
 			},
 			/* Get (read) product list
 			   http://localhost:8080/product?query={list{id,name,info,price}}
@@ -73,9 +73,9 @@ var queryType = graphql.NewObject(
 			"list": &graphql.Field{
 				Type:        graphql.NewList(productType),
 				Description: "Get product list",
-				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 					return products, nil
-				},
+				}),
 			},
 		},
 	})
@@ -100,7 +100,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.NewNonNull(graphql.Float),
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 				rand.Seed(time.Now().UnixNano())
 				product := Product{
 					ID:    int64(rand.Intn(100000)), // generate random ID
@@ -110,7 +110,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 				products = append(products, product)
 				return product, nil
-			},
+			}),
 		},
 
 		/* Update product by id
@@ -133,7 +133,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.Float,
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 				id, _ := params.Args["id"].(int)
 				name, nameOk := params.Args["name"].(string)
 				info, infoOk := params.Args["info"].(string)
@@ -155,7 +155,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					}
 				}
 				return product, nil
-			},
+			}),
 		},
 
 		/* Delete product by id
@@ -169,7 +169,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.NewNonNull(graphql.Int),
 				},
 			},
-			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+			Resolve: graphql.ResolveField(func(params graphql.ResolveParams) (interface{}, error) {
 				id, _ := params.Args["id"].(int)
 				product := Product{}
 				for i, p := range products {
@@ -181,7 +181,7 @@ var mutationType = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				return product, nil
-			},
+			}),
 		},
 	},
 })
@@ -194,7 +194,7 @@ var schema, _ = graphql.NewSchema(
 )
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})

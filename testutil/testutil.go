@@ -157,55 +157,55 @@ func init() {
 			"id": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the human.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.ID, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"name": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The name of the human.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.Name, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"friends": &graphql.Field{
 				Type:        graphql.NewList(characterInterface),
 				Description: "The friends of the human, or an empty list if they have none.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.Friends, nil
 					}
 					return []interface{}{}, nil
-				},
+				}),
 			},
 			"appearsIn": &graphql.Field{
 				Type:        graphql.NewList(episodeEnum),
 				Description: "Which movies they appear in.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.AppearsIn, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"homePlanet": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The home planet of the human, or null if unknown.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if human, ok := p.Source.(StarWarsChar); ok {
 						return human.HomePlanet, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			characterInterface,
 		},
 	})
@@ -216,27 +216,27 @@ func init() {
 			"id": &graphql.Field{
 				Type:        graphql.NewNonNull(graphql.String),
 				Description: "The id of the droid.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.ID, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"name": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The name of the droid.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.Name, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"friends": &graphql.Field{
 				Type:        graphql.NewList(characterInterface),
 				Description: "The friends of the droid, or an empty list if they have none.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						friends := []map[string]interface{}{}
 						for _, friend := range droid.Friends {
@@ -248,30 +248,30 @@ func init() {
 						return droid.Friends, nil
 					}
 					return []interface{}{}, nil
-				},
+				}),
 			},
 			"appearsIn": &graphql.Field{
 				Type:        graphql.NewList(episodeEnum),
 				Description: "Which movies they appear in.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.AppearsIn, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 			"primaryFunction": &graphql.Field{
 				Type:        graphql.String,
 				Description: "The primary function of the droid.",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					if droid, ok := p.Source.(StarWarsChar); ok {
 						return droid.PrimaryFunction, nil
 					}
 					return nil, nil
-				},
+				}),
 			},
 		},
-		Interfaces: []*graphql.Interface{
+		Interfaces: graphql.Interfaces{
 			characterInterface,
 		},
 	})
@@ -288,9 +288,9 @@ func init() {
 						Type: episodeEnum,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return GetHero(p.Args["episode"]), nil
-				},
+				}),
 			},
 			"human": &graphql.Field{
 				Type: humanType,
@@ -300,13 +300,13 @@ func init() {
 						Type:        graphql.NewNonNull(graphql.String),
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					id, err := strconv.Atoi(p.Args["id"].(string))
 					if err != nil {
 						return nil, err
 					}
 					return GetHuman(id), nil
-				},
+				}),
 			},
 			"droid": &graphql.Field{
 				Type: droidType,
@@ -316,9 +316,9 @@ func init() {
 						Type:        graphql.NewNonNull(graphql.String),
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 					return GetDroid(p.Args["id"].(int)), nil
-				},
+				}),
 			},
 		},
 	})
@@ -362,7 +362,8 @@ func TestParse(t *testing.T, query string) *ast.Document {
 	return astDoc
 }
 func TestExecute(t *testing.T, ep graphql.ExecuteParams) *graphql.Result {
-	return graphql.Execute(ep)
+	result, _ := graphql.Execute(ep)
+	return result
 }
 
 func Diff(want, got interface{}) []string {

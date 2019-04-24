@@ -83,7 +83,7 @@ func TestQuery(t *testing.T) {
 }
 
 func testGraphql(test T, p graphql.Params, t *testing.T) {
-	result := graphql.Do(p)
+	result, _ := graphql.Do(p)
 	if len(result.Errors) > 0 {
 		t.Fatalf("wrong result, unexpected errors: %v", result.Errors)
 	}
@@ -95,9 +95,9 @@ func testGraphql(test T, p graphql.Params, t *testing.T) {
 func TestBasicGraphQLExample(t *testing.T) {
 	// taken from `graphql-js` README
 
-	helloFieldResolved := func(p graphql.ResolveParams) (interface{}, error) {
+	helloFieldResolved := graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 		return "world", nil
-	}
+	})
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
@@ -120,7 +120,7 @@ func TestBasicGraphQLExample(t *testing.T) {
 		"hello": "world",
 	}
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -134,9 +134,9 @@ func TestBasicGraphQLExample(t *testing.T) {
 }
 
 func TestThreadsContextFromParamsThrough(t *testing.T) {
-	extractFieldFromContextFn := func(p graphql.ResolveParams) (interface{}, error) {
+	extractFieldFromContextFn := graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 		return p.Context.Value(p.Args["key"]), nil
-	}
+	})
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
@@ -157,7 +157,7 @@ func TestThreadsContextFromParamsThrough(t *testing.T) {
 	}
 	query := `{ value(key:"a") }`
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 		Context:       context.WithValue(context.TODO(), "a", "xyz"),
@@ -179,9 +179,9 @@ func TestNewErrorChecksNilNodes(t *testing.T) {
 			Fields: graphql.Fields{
 				"graphql_is": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return "", nil
-					},
+					}),
 				},
 			},
 		}),
@@ -190,7 +190,7 @@ func TestNewErrorChecksNilNodes(t *testing.T) {
 		t.Fatalf("unexpected errors: %v", err.Error())
 	}
 	query := `{graphql_is:great(sort:ByPopularity)}{stars}`
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -200,16 +200,16 @@ func TestNewErrorChecksNilNodes(t *testing.T) {
 }
 
 func TestEmptyStringIsNotNull(t *testing.T) {
-	checkForEmptyString := func(p graphql.ResolveParams) (interface{}, error) {
+	checkForEmptyString := graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 		arg := p.Args["arg"]
 		if arg == nil || arg.(string) != "" {
 			t.Errorf("Expected empty string for input arg, got %#v", arg)
 		}
 		return "yay", nil
-	}
-	returnEmptyString := func(p graphql.ResolveParams) (interface{}, error) {
+	})
+	returnEmptyString := graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 		return "", nil
-	}
+	})
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(graphql.ObjectConfig{
@@ -234,7 +234,7 @@ func TestEmptyStringIsNotNull(t *testing.T) {
 	}
 	query := `{ checkEmptyArg(arg:"") checkEmptyResult }`
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
