@@ -423,6 +423,13 @@ func InitObject(objectType *Object, config ObjectConfig) error {
 
 	return nil
 }
+
+// ensureCache ensures that both fields and interfaces have been initialized properly,
+// to prevent races.
+func (gt *Object) ensureCache() {
+	gt.Fields()
+	gt.Interfaces()
+}
 func (gt *Object) AddFieldConfig(fieldName string, fieldConfig *Field) {
 	if fieldName == "" || fieldConfig == nil {
 		return
