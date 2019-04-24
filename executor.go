@@ -34,7 +34,7 @@ func Execute(p ExecuteParams) (result *Result, newCtx context.Context) {
 	if len(extErrs) != 0 {
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	defer func() {
@@ -46,7 +46,11 @@ func Execute(p ExecuteParams) (result *Result, newCtx context.Context) {
 		addExtensionResults(&p, result)
 	}()
 
-	resultChannel := make(chan *Result, 2)
+	type resultWrapper struct {
+		result *Result
+		ctx    context.Context
+	}
+	resultChannel := make(chan resultWrapper, 2)
 
 	go func() {
 		result := &Result{}
@@ -55,7 +59,7 @@ func Execute(p ExecuteParams) (result *Result, newCtx context.Context) {
 			if err := recover(); err != nil {
 				result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
 			}
-			resultChannel <- result
+			resultChannel <- resultWrapper{result: result}
 		}()
 
 		exeContext, err := buildExecutionContext(buildExecutionCtxParams{
@@ -70,25 +74,25 @@ func Execute(p ExecuteParams) (result *Result, newCtx context.Context) {
 
 		if err != nil {
 			result.Errors = append(result.Errors, gqlerrors.FormatError(err.(error)))
-			resultChannel <- result
+			resultChannel <- resultWrapper{result: result}
 			return
 		}
 
-		result, newCtx = executeOperation(executeOperationParams{
+		result, ctx := executeOperation(executeOperationParams{
 			ExecutionContext: exeContext,
 			Root:             p.Root,
 			Operation:        exeContext.Operation,
 		})
-		resultChannel <- result
+		resultChannel <- resultWrapper{result: result, ctx: ctx}
 	}()
 
 	select {
 	case <-ctx.Done():
 		result := &Result{}
 		result.Errors = append(result.Errors, gqlerrors.FormatError(ctx.Err()))
-		return result
+		return result, p.Context
 	case r := <-resultChannel:
-		return r
+		return r.result, r.ctx
 	}
 }
 
@@ -644,14 +648,12 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		VariableValues: eCtx.VariableValues,
 	}
 
-	var resolveFnError error
-
 	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
 	if len(extErrs) != 0 {
 		eCtx.Errors = append(eCtx.Errors, extErrs...)
 	}
 
-	result, resolveFnError = resolveFn(ResolveParams{
+	params := ResolveParams{
 		Source:  source,
 		Args:    args,
 		Info:    info,
@@ -686,6 +688,8 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		if err != nil {
 			panic(err)
 		}
+	}
+
 	extErrs = resolveFieldFinishFn(result, resolveFnError)
 	if len(extErrs) != 0 {
 		eCtx.Errors = append(eCtx.Errors, extErrs...)

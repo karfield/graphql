@@ -23,7 +23,7 @@ func TestRace(t *testing.T) {
 			"runtime"
 			"sync"
 
-			"github.com/graphql-go/graphql"
+			"github.com/karfield/graphql"
 		)
 
 		func main() {
@@ -38,9 +38,9 @@ func TestRace(t *testing.T) {
 							Fields: graphql.Fields{
 								"hello": &graphql.Field{
 									Type: graphql.String,
-									Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+									Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 										return "world", nil
-									},
+									}),
 								},
 							},
 						}),

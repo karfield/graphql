@@ -44,14 +44,14 @@ func Do(p Params) (*Result, context.Context) {
 	if len(extErrs) != 0 {
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	extErrs, parseFinishFn := handleExtensionsParseDidStart(&p)
 	if len(extErrs) != 0 {
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	// parse the source
@@ -64,7 +64,7 @@ func Do(p Params) (*Result, context.Context) {
 		extErrs = append(extErrs, gqlerrors.FormatErrors(err)...)
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	// run parseFinish functions for extensions
@@ -72,7 +72,7 @@ func Do(p Params) (*Result, context.Context) {
 	if len(extErrs) != 0 {
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	// notify extensions abput the start of the validation
@@ -80,7 +80,7 @@ func Do(p Params) (*Result, context.Context) {
 	if len(extErrs) != 0 {
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	// validate document
@@ -94,7 +94,7 @@ func Do(p Params) (*Result, context.Context) {
 		extErrs = append(extErrs, validationResult.Errors...)
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	// run the validationFinishFuncs for extensions
@@ -102,7 +102,7 @@ func Do(p Params) (*Result, context.Context) {
 	if len(extErrs) != 0 {
 		return &Result{
 			Errors: extErrs,
-		}
+		}, p.Context
 	}
 
 	return Execute(ExecuteParams{

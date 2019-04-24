@@ -323,9 +323,9 @@ func TestCustomMapType(t *testing.T) {
 							},
 						},
 					}),
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return data, nil
-					},
+					}),
 				},
 			},
 		}),

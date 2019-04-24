@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/graphql/gqlerrors"
-	"github.com/graphql-go/graphql/testutil"
+	"github.com/karfield/graphql"
+	"github.com/karfield/graphql/gqlerrors"
+	"github.com/karfield/graphql/testutil"
 )
 
 func tinit(t *testing.T) graphql.Schema {
@@ -19,9 +19,9 @@ func tinit(t *testing.T) graphql.Schema {
 			Fields: graphql.Fields{
 				"a": &graphql.Field{
 					Type: graphql.String,
-					Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
 						return "foo", nil
-					},
+					}),
 				},
 			},
 		}),
@@ -45,7 +45,7 @@ func TestExtensionInitPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -76,7 +76,7 @@ func TestExtensionParseDidStartPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -104,7 +104,7 @@ func TestExtensionParseFinishFuncPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -135,7 +135,7 @@ func TestExtensionValidationDidStartPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -163,7 +163,7 @@ func TestExtensionValidationFinishFuncPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -194,7 +194,7 @@ func TestExtensionExecutionDidStartPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -222,7 +222,7 @@ func TestExtensionExecutionFinishFuncPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -256,7 +256,7 @@ func TestExtensionResolveFieldDidStartPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -287,7 +287,7 @@ func TestExtensionResolveFieldFinishFuncPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
@@ -322,7 +322,7 @@ func TestExtensionGetResultPanic(t *testing.T) {
 	query := `query Example { a }`
 	schema.AddExtensions(ext)
 
-	result := graphql.Do(graphql.Params{
+	result, _ := graphql.Do(graphql.Params{
 		Schema:        schema,
 		RequestString: query,
 	})
