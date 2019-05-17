@@ -402,7 +402,7 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 				obj[name] = value
 			}
 		}
-		return obj
+		return ttype.ParseInputValue(obj)
 	case *Scalar:
 		return ttype.ParseLiteral(valueAST)
 	case *Enum:

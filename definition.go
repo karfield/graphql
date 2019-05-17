@@ -1233,10 +1233,13 @@ type InputObjectConfigFieldMapThunk func() InputObjectConfigFieldMap
 func (InputObjectConfigFieldMap) inputConfigurableFields()      {}
 func (InputObjectConfigFieldMapThunk) inputConfigurableFields() {}
 
+type ParseInputValueFn func(map[string]interface{}) interface{}
+
 type InputObjectConfig struct {
 	Name        string                  `json:"name"`
 	Fields      InputConfigurableFields `json:"fields"`
 	Description string                  `json:"description"`
+	ParseValue  ParseInputValueFn
 }
 
 func NewInputObject(config InputObjectConfig) *InputObject {
@@ -1316,6 +1319,12 @@ func (gt *InputObject) Fields() InputObjectFieldMap {
 		gt.fields = gt.defineFieldMap()
 	}
 	return gt.fields
+}
+func (gt *InputObject) ParseInputValue(obj map[string]interface{}) interface{} {
+	if gt.typeConfig.ParseValue != nil {
+		return gt.typeConfig.ParseValue(obj)
+	}
+	return obj
 }
 func (gt *InputObject) Name() string {
 	return gt.PrivateName
