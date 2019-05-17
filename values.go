@@ -360,7 +360,13 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 		// Note: we're not doing any checking that this variable is correct. We're
 		// assuming that this query has been validated and the variable usage here
 		// is of the correct type.
-		return variables[valueAST.Name.Value]
+		obj := variables[valueAST.Name.Value]
+		if input, ok := ttype.(*InputObject); ok {
+			if mapObj, ok := obj.(map[string]interface{}); ok {
+				return input.ParseInputValue(mapObj)
+			}
+		}
+		return obj
 	}
 	switch ttype := ttype.(type) {
 	case *NonNull:
