@@ -150,7 +150,7 @@ func (ctx *ValidationContext) FragmentSpreads(node *ast.SelectionSet) []*ast.Fra
 		return spreads
 	}
 
-	spreads := []*ast.FragmentSpread{}
+	var spreads []*ast.FragmentSpread
 	setsToVisit := []*ast.SelectionSet{node}
 
 	for {
@@ -186,7 +186,7 @@ func (ctx *ValidationContext) RecursivelyReferencedFragments(operation *ast.Oper
 		return fragments
 	}
 
-	fragments := []*ast.FragmentDefinition{}
+	var fragments []*ast.FragmentDefinition
 	collectedNames := map[string]bool{}
 	nodesToVisit := []*ast.SelectionSet{operation.SelectionSet}
 
@@ -223,7 +223,7 @@ func (ctx *ValidationContext) VariableUsages(node HasSelectionSet) []*VariableUs
 	if usages, ok := ctx.variableUsages[node]; ok && usages != nil {
 		return usages
 	}
-	usages := []*VariableUsage{}
+	var usages []*VariableUsage
 	typeInfo := NewTypeInfo(&TypeInfoConfig{
 		Schema: ctx.schema,
 	})

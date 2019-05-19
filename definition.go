@@ -1062,7 +1062,7 @@ func InitEnum(gt *Enum, config EnumConfig) error {
 }
 func (gt *Enum) defineEnumValues(valueMap EnumValueConfigMap) ([]*EnumValueDefinition, error) {
 	var err error
-	values := []*EnumValueDefinition{}
+	var values []*EnumValueDefinition
 
 	if err = invariantf(
 		len(valueMap) > 0,

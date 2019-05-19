@@ -43,7 +43,7 @@ func newLocatedError(err interface{}, nodes []ast.Node, path []interface{}) *gql
 }
 
 func FieldASTsToNodeASTs(fieldASTs []*ast.Field) []ast.Node {
-	nodes := []ast.Node{}
+	var nodes []ast.Node
 	for _, fieldAST := range fieldASTs {
 		nodes = append(nodes, fieldAST)
 	}

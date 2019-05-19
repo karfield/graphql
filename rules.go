@@ -747,7 +747,7 @@ func KnownTypeNamesRule(context *ValidationContext) *ValidationRuleInstance {
 						}
 						ttype := context.Schema().Type(typeNameValue)
 						if ttype == nil {
-							suggestedTypes := []string{}
+							var suggestedTypes []string
 							for key := range context.Schema().TypeMap() {
 								suggestedTypes = append(suggestedTypes, key)
 							}
@@ -826,7 +826,7 @@ func NoFragmentCyclesRule(context *ValidationContext) *ValidationRuleInstance {
 	visitedFrags := map[string]bool{}
 
 	// Array of AST nodes used to produce meaningful errors
-	spreadPath := []*ast.FragmentSpread{}
+	var spreadPath []*ast.FragmentSpread
 
 	// Position in the spread path
 	spreadPathIndexByName := map[string]int{}
@@ -1001,8 +1001,8 @@ func NoUndefinedVariablesRule(context *ValidationContext) *ValidationRuleInstanc
 // within operations, or spread within other fragments spread within operations.
 func NoUnusedFragmentsRule(context *ValidationContext) *ValidationRuleInstance {
 
-	var fragmentDefs = []*ast.FragmentDefinition{}
-	var operationDefs = []*ast.OperationDefinition{}
+	var fragmentDefs []*ast.FragmentDefinition
+	var operationDefs []*ast.OperationDefinition
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -1074,7 +1074,7 @@ func UnusedVariableMessage(varName string, opName string) string {
 // are used, either directly or within a spread fragment.
 func NoUnusedVariablesRule(context *ValidationContext) *ValidationRuleInstance {
 
-	var variableDefs = []*ast.VariableDefinition{}
+	var variableDefs []*ast.VariableDefinition
 
 	visitorOpts := &visitor.VisitorOptions{
 		KindFuncMap: map[string]visitor.NamedVisitFuncs{
@@ -1474,7 +1474,7 @@ func UniqueFragmentNamesRule(context *ValidationContext) *ValidationRuleInstance
 // A GraphQL input object value is only valid if all supplied fields are
 // uniquely named.
 func UniqueInputFieldNamesRule(context *ValidationContext) *ValidationRuleInstance {
-	knownNameStack := []map[string]*ast.Name{}
+	var knownNameStack []map[string]*ast.Name
 	knownNames := map[string]*ast.Name{}
 
 	visitorOpts := &visitor.VisitorOptions{
@@ -1754,14 +1754,14 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 		// Lists accept a non-list value as a list of one.
 		itemType, _ := ttype.OfType.(Input)
 		if valueAST, ok := valueAST.(*ast.ListValue); ok {
-			messagesReduce := []string{}
+			var messagesReduce []string
 			for _, value := range valueAST.Values {
 				_, messages := isValidLiteralValue(itemType, value)
 				for idx, message := range messages {
 					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
 				}
 			}
-			return (len(messagesReduce) == 0), messagesReduce
+			return len(messagesReduce) == 0, messagesReduce
 		}
 		return isValidLiteralValue(itemType, valueAST)
 	case *InputObject:
@@ -1771,7 +1771,7 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 			return false, []string{fmt.Sprintf(`Expected "%v", found not an object.`, ttype.Name())}
 		}
 		fields := ttype.Fields()
-		messagesReduce := []string{}
+		var messagesReduce []string
 
 		// Ensure every provided field is defined.
 		fieldASTs := valueAST.Fields
@@ -1795,7 +1795,7 @@ func isValidLiteralValue(ttype Input, valueAST ast.Value) (bool, []string) {
 				}
 			}
 		}
-		return (len(messagesReduce) == 0), messagesReduce
+		return len(messagesReduce) == 0, messagesReduce
 	case *Scalar:
 		if isNullish(ttype.ParseLiteral(valueAST)) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found %v.`, ttype.Name(), printer.Print(valueAST))}
@@ -1828,8 +1828,8 @@ func (s suggestionListResult) Less(i, j int) bool {
 // suggestionList Given an invalid input string and a list of valid options, returns a filtered
 // list of valid options sorted based on their similarity with the input.
 func suggestionList(input string, options []string) []string {
-	dists := []float64{}
-	filteredOpts := []string{}
+	var dists []float64
+	var filteredOpts []string
 	inputThreshold := float64(len(input) / 2)
 
 	for _, opt := range options {
@@ -1854,7 +1854,7 @@ func suggestionList(input string, options []string) []string {
 // adjacent characters.
 // This distance can be useful for detecting typos in input or sorting
 func lexicalDistance(a, b string) float64 {
-	d := [][]float64{}
+	var d [][]float64
 	aLen := len(a)
 	bLen := len(b)
 	for i := 0; i <= aLen; i++ {

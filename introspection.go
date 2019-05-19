@@ -304,7 +304,7 @@ func init() {
 				Type: NewNonNull(Boolean),
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*FieldDefinition); ok {
-						return (field.DeprecationReason != ""), nil
+						return field.DeprecationReason != "", nil
 					}
 					return false, nil
 				}),
@@ -413,7 +413,7 @@ func init() {
 				)),
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						results := []Type{}
+						var results []Type
 						for _, ttype := range schema.TypeMap() {
 							results = append(results, ttype)
 						}
@@ -489,7 +489,7 @@ func init() {
 				Type: NewNonNull(Boolean),
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if field, ok := p.Source.(*EnumValueDefinition); ok {
-						return (field.DeprecationReason != ""), nil
+						return field.DeprecationReason != "", nil
 					}
 					return false, nil
 				}),
@@ -694,7 +694,7 @@ func astFromValue(value interface{}, ttype Type) ast.Value {
 	if ttype, ok := ttype.(*List); ok {
 		if valueVal.Type().Kind() == reflect.Slice {
 			itemType := ttype.OfType
-			values := []ast.Value{}
+			var values []ast.Value
 			for i := 0; i < valueVal.Len(); i++ {
 				item := valueVal.Index(i).Interface()
 				itemAST := astFromValue(item, itemType)

@@ -138,7 +138,7 @@ func coerceValue(ttype Input, value interface{}) interface{} {
 	case *NonNull:
 		return coerceValue(ttype.OfType, value)
 	case *List:
-		var values = []interface{}{}
+		var values []interface{}
 		valType := reflect.ValueOf(value)
 		if valType.Kind() == reflect.Slice {
 			for i := 0; i < valType.Len(); i++ {
@@ -230,7 +230,7 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 			valType = valType.Elem()
 		}
 		if valType.Kind() == reflect.Slice {
-			messagesReduce := []string{}
+			var messagesReduce []string
 			for i := 0; i < valType.Len(); i++ {
 				val := valType.Index(i).Interface()
 				_, messages := isValidInputValue(val, ttype.OfType)
@@ -238,12 +238,12 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 					messagesReduce = append(messagesReduce, fmt.Sprintf(`In element #%v: %v`, idx+1, message))
 				}
 			}
-			return (len(messagesReduce) == 0), messagesReduce
+			return len(messagesReduce) == 0, messagesReduce
 		}
 		return isValidInputValue(value, ttype.OfType)
 
 	case *InputObject:
-		messagesReduce := []string{}
+		var messagesReduce []string
 
 		valueMap, ok := value.(map[string]interface{})
 		if !ok {
@@ -252,8 +252,8 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 		fields := ttype.Fields()
 
 		// to ensure stable order of field evaluation
-		fieldNames := []string{}
-		valueMapFieldNames := []string{}
+		var fieldNames []string
+		var valueMapFieldNames []string
 
 		for fieldName := range fields {
 			fieldNames = append(fieldNames, fieldName)
@@ -281,7 +281,7 @@ func isValidInputValue(value interface{}, ttype Input) (bool, []string) {
 				}
 			}
 		}
-		return (len(messagesReduce) == 0), messagesReduce
+		return len(messagesReduce) == 0, messagesReduce
 	case *Scalar:
 		if parsedVal := ttype.ParseValue(value); isNullish(parsedVal) {
 			return false, []string{fmt.Sprintf(`Expected type "%v", found "%v".`, ttype.Name(), value)}
@@ -372,7 +372,7 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 	case *NonNull:
 		return valueFromAST(valueAST, ttype.OfType, variables)
 	case *List:
-		values := []interface{}{}
+		var values []interface{}
 		if valueAST, ok := valueAST.(*ast.ListValue); ok {
 			for _, itemAST := range valueAST.Values {
 				values = append(values, valueFromAST(itemAST, ttype.OfType, variables))

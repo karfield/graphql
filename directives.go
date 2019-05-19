@@ -71,7 +71,7 @@ func NewDirective(config DirectiveConfig) *Directive {
 		return dir
 	}
 
-	args := []*Argument{}
+	var args []*Argument
 
 	for argName, argConfig := range config.Args {
 		if dir.err = assertValidName(argName); dir.err != nil {

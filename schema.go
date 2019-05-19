@@ -90,7 +90,7 @@ func NewSchema(config SchemaConfig) (Schema, error) {
 
 	// Build type map now to detect any errors within this schema.
 	typeMap := TypeMap{}
-	initialTypes := []Type{}
+	var initialTypes []Type
 	if schema.QueryType() != nil {
 		initialTypes = append(initialTypes, schema.QueryType())
 	}
