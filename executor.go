@@ -598,37 +598,39 @@ func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, 
 	eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
 }
 
-func (info *ResolveInfo) flatSelections(selection ast.Selection, parent string) {
+func (info *ResolveInfo) flatSelections(selection ast.Selection, initial bool, parent string) {
 	switch selection := selection.(type) {
 	case *ast.Field:
 		fieldName := selection.Name.Value
 		if fieldName == "__typename" {
 			return
 		}
-		if info.FieldSelectionSet == nil {
-			info.FieldSelectionSet = map[string]*ast.Field{}
+		if !initial {
+			if info.FieldSelectionSet == nil {
+				info.FieldSelectionSet = map[string]*ast.Field{}
+			}
+			info.FieldSelectionSet[fieldName] = selection
 		}
-		info.FieldSelectionSet[fieldName] = selection
 		if selection.SelectionSet != nil {
 			if parent != "" {
 				parent += "/"
 			}
 			parent += fieldName
 			for _, s := range selection.SelectionSet.Selections {
-				info.flatSelections(s, parent)
+				info.flatSelections(s, false, parent)
 			}
 		}
 	case *ast.FragmentSpread:
 		fragment := info.Fragments[selection.Name.Value].(*ast.FragmentDefinition)
 		if fragment.SelectionSet != nil {
 			for _, s := range fragment.SelectionSet.Selections {
-				info.flatSelections(s, parent)
+				info.flatSelections(s, false, parent)
 			}
 		}
 	case *ast.InlineFragment:
 		if selection.SelectionSet != nil {
 			for _, s := range selection.SelectionSet.Selections {
-				info.flatSelections(s, parent)
+				info.flatSelections(s, false, parent)
 			}
 		}
 	}
@@ -684,7 +686,7 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		VariableValues: eCtx.VariableValues,
 	}
 
-	(&info).flatSelections(fieldAST, "")
+	(&info).flatSelections(fieldAST, true, "")
 
 	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
 	if len(extErrs) != 0 {
