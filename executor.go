@@ -598,6 +598,42 @@ func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, 
 	eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
 }
 
+func (info *ResolveInfo) flatSelections(selection ast.Selection, parent string) {
+	switch selection := selection.(type) {
+	case *ast.Field:
+		fieldName := selection.Name.Value
+		if fieldName == "__typename" {
+			return
+		}
+		if info.FieldSelectionSet == nil {
+			info.FieldSelectionSet = map[string]*ast.Field{}
+		}
+		info.FieldSelectionSet[fieldName] = selection
+		if selection.SelectionSet != nil {
+			if parent != "" {
+				parent += "/"
+			}
+			parent += fieldName
+			for _, s := range selection.SelectionSet.Selections {
+				info.flatSelections(s, parent)
+			}
+		}
+	case *ast.FragmentSpread:
+		fragment := info.Fragments[selection.Name.Value].(*ast.FragmentDefinition)
+		if fragment.SelectionSet != nil {
+			for _, s := range fragment.SelectionSet.Selections {
+				info.flatSelections(s, parent)
+			}
+		}
+	case *ast.InlineFragment:
+		if selection.SelectionSet != nil {
+			for _, s := range selection.SelectionSet.Selections {
+				info.flatSelections(s, parent)
+			}
+		}
+	}
+}
+
 // Resolves the field on the given source object. In particular, this
 // figures out the value that the field returns by calling its resolve function,
 // then calls completeValue to complete promises, serialize scalars, or execute
@@ -647,6 +683,8 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Operation:      eCtx.Operation,
 		VariableValues: eCtx.VariableValues,
 	}
+
+	(&info).flatSelections(fieldAST, "")
 
 	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
 	if len(extErrs) != 0 {
