@@ -333,6 +333,33 @@ func isIterable(src interface{}) bool {
 	return t.Kind() == reflect.Slice || t.Kind() == reflect.Array
 }
 
+func valueFromASTVariable(ttype Input, obj interface{}) interface{} {
+	switch ttype := ttype.(type) {
+	case *InputObject:
+		if mapObj, ok := obj.(map[string]interface{}); ok {
+			return ttype.ParseInputValue(mapObj)
+		}
+	case *List:
+		if list, ok := obj.([]interface{}); ok {
+			var values []interface{}
+			for _, obj := range list {
+				values = append(values, valueFromASTVariable(ttype.OfType, obj))
+			}
+			return values
+		}
+	case *NonNull:
+		return valueFromASTVariable(ttype.OfType, obj)
+	case *Scalar:
+		return ttype.ParseValue(obj)
+	case *Enum:
+		return ttype.ParseValue(obj)
+	}
+	// Note: we're not doing any checking that this variable is correct. We're
+	// assuming that this query has been validated and the variable usage here
+	// is of the correct type.
+	return obj
+}
+
 /**
  * Produces a value given a GraphQL Value AST.
  *
@@ -357,16 +384,8 @@ func valueFromAST(valueAST ast.Value, ttype Input, variables map[string]interfac
 		if valueAST.Name == nil || variables == nil {
 			return nil
 		}
-		// Note: we're not doing any checking that this variable is correct. We're
-		// assuming that this query has been validated and the variable usage here
-		// is of the correct type.
 		obj := variables[valueAST.Name.Value]
-		if input, ok := ttype.(*InputObject); ok {
-			if mapObj, ok := obj.(map[string]interface{}); ok {
-				return input.ParseInputValue(mapObj)
-			}
-		}
-		return obj
+		return valueFromASTVariable(ttype, obj)
 	}
 	switch ttype := ttype.(type) {
 	case *NonNull:
