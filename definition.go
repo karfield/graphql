@@ -1121,7 +1121,16 @@ func (gt *Enum) ParseValue(value interface{}) interface{} {
 	case *string:
 		v = *value
 	default:
-		return nil
+		var ok bool
+		v, ok = func() (string, bool) {
+			defer func() {
+				recover()
+			}()
+			return string(v), true
+		}()
+		if !ok {
+			return nil
+		}
 	}
 	if enumValue, ok := gt.getNameLookup()[v]; ok {
 		return enumValue.Value
