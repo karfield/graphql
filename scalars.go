@@ -532,6 +532,10 @@ func serializeDateTime(value interface{}) interface{} {
 
 func unserializeDateTime(value interface{}) interface{} {
 	switch value := value.(type) {
+	case time.Time:
+		return value
+	case *time.Time:
+		return *value
 	case []byte:
 		t := time.Time{}
 		err := t.UnmarshalText(value)
