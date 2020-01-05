@@ -700,14 +700,6 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Context: eCtx.Context,
 	}
 
-	mw := eCtx.Schema.middleware
-	if mw != nil {
-		err := mw.BeforeResolveField(params)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	var (
 		resolveFnError error
 		newCtx         context.Context
@@ -721,13 +713,6 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 
 	if resolveFnError != nil {
 		panic(resolveFnError)
-	}
-
-	if mw != nil {
-		err := mw.AfterResolveField(params, result)
-		if err != nil {
-			panic(err)
-		}
 	}
 
 	extErrs = resolveFieldFinishFn(result, resolveFnError)
