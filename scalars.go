@@ -1,7 +1,6 @@
 package graphql
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -305,13 +304,107 @@ var Float = NewScalar(ScalarConfig{
 })
 
 func coerceString(value interface{}) interface{} {
-	if v, ok := value.(*string); ok {
+	switch v := value.(type) {
+	case string:
+		return v
+	case *string:
 		if v == nil {
 			return nil
 		}
 		return *v
+	case int:
+		return strconv.Itoa(v)
+	case *int:
+		if v == nil {
+			return nil
+		}
+		return strconv.Itoa(*v)
+	case int8:
+		return strconv.Itoa(int(v))
+	case *int8:
+		if v == nil {
+			return nil
+		}
+		return strconv.Itoa(int(*v))
+	case int16:
+		return strconv.Itoa(int(v))
+	case *int16:
+		if v == nil {
+			return nil
+		}
+		return strconv.Itoa(int(*v))
+	case int32:
+		return strconv.Itoa(int(v))
+	case *int32:
+		if v == nil {
+			return nil
+		}
+		return strconv.Itoa(int (*v))
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case *int64:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatInt(*v, 10)
+	case uint:
+		return strconv.FormatUint(uint64(v), 10)
+	case *uint:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatUint(uint64(*v), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10)
+	case *uint8:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatUint(uint64(*v), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10)
+	case *uint16:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatUint(uint64(*v), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10)
+	case *uint32:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatUint(uint64(*v), 10)
+	case uint64:
+		return strconv.FormatUint(v, 10)
+	case *uint64:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatUint(*v, 10)
+	case bool:
+		return strconv.FormatBool(v)
+	case *bool:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatBool(*v)
+	case float32:
+		return strconv.FormatFloat(float64(v), 'e', -1, 32)
+	case *float32:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatFloat(float64(*v), 'e', -1, 32)
+	case float64:
+		return strconv.FormatFloat(v, 'e', -1, 64)
+	case *float64:
+		if v == nil {
+			return nil
+		}
+		return strconv.FormatFloat(*v, 'e', -1, 64)
 	}
-	return fmt.Sprintf("%v", value)
+	return nil
 }
 
 // String is the GraphQL string type definition
