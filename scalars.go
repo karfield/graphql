@@ -3,6 +3,7 @@ package graphql
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"reflect"
 	"strconv"
 	"time"
@@ -405,6 +406,12 @@ func coerceString(value interface{}) interface{} {
 			return nil
 		}
 		return strconv.FormatFloat(*v, 'e', -1, 64)
+	case big.Int:
+		return v.String()
+	case big.Rat:
+		return v.String()
+	case big.Float:
+		return v.String()
 	}
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
@@ -418,12 +425,7 @@ func coerceString(value interface{}) interface{} {
 		return strconv.FormatFloat(v.Float(), 'e', -1, 64)
 	case reflect.Bool:
 		return strconv.FormatBool(v.Bool())
-	case reflect.Ptr:
-		if v.IsNil() {
-			return nil
-		}
-		return coerceString(v.Elem())
-	case reflect.Slice, reflect.Map, reflect.Func, reflect.Chan, reflect.UnsafePointer, reflect.Interface:
+	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Func, reflect.Chan, reflect.UnsafePointer, reflect.Interface:
 		if v.IsNil() {
 			return nil
 		}
