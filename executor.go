@@ -991,6 +991,59 @@ type FieldResolver interface {
 	Resolve(p ResolveParams) (interface{}, error)
 }
 
+func extractAnonymousStructFields(fieldType reflect.Type, fieldVal reflect.Value, wantedFieldName string) (interface{}, error) {
+	if fieldType.Kind() == reflect.Ptr {
+		return extractAnonymousStructFields(fieldType.Elem(), fieldVal.Elem(), wantedFieldName)
+	} else if fieldType.Kind() == reflect.Struct {
+		hasAnonymousFields := false
+		for i := 0; i < fieldType.NumField(); i ++ {
+			subField := fieldType.Field(i)
+			subFieldValue := fieldVal.Field(i)
+			if subField.Anonymous {
+				hasAnonymousFields = true
+				continue
+			}
+			if strings.EqualFold(subField.Name, wantedFieldName) {
+				return subFieldValue.Interface(), nil
+			}
+			tag := subField.Tag
+			checkTag := func(tagName string) bool {
+				t := tag.Get(tagName)
+				tOptions := strings.Split(t, ",")
+				if len(tOptions) == 0 {
+					return false
+				}
+				if tOptions[0] != wantedFieldName {
+					return false
+				}
+				return true
+			}
+			if checkTag("json") || checkTag("graphql") {
+				return subFieldValue.Interface(), nil
+			} else {
+				continue
+			}
+		}
+		if hasAnonymousFields {
+			for i := 0; i < fieldType.NumField(); i ++ {
+				subField := fieldType.Field(i)
+				subFieldValue := fieldVal.Field(i)
+				if subField.Anonymous {
+					resolved, err := extractAnonymousStructFields(subField.Type, subFieldValue, wantedFieldName)
+					if err != nil {
+						return nil, err
+					}
+					if resolved != nil {
+						return resolved, nil
+					}
+					continue
+				}
+			}
+		}
+	}
+	return nil, nil
+}
+
 // DefaultResolveFn If a resolve function is not given, then a default resolve behavior is used
 // which takes the property of the source object of the same name as the field
 // and returns it as the result, or if it's a function, returns the result
@@ -1011,9 +1064,14 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 	}
 
 	if sourceVal.Type().Kind() == reflect.Struct {
+		hasAnonymousFields := false
 		for i := 0; i < sourceVal.NumField(); i++ {
 			valueField := sourceVal.Field(i)
 			typeField := sourceVal.Type().Field(i)
+			if typeField.Anonymous && typeField.Type.Kind() == reflect.Struct{
+				hasAnonymousFields = true
+				continue
+			}
 			// try matching the field name first
 			if strings.EqualFold(typeField.Name, p.Info.FieldName) {
 				return valueField.Interface(), nil
@@ -1034,6 +1092,23 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 				return valueField.Interface(), nil
 			} else {
 				continue
+			}
+		}
+		if hasAnonymousFields {
+			// extracting embedded fields later
+			for i := 0; i < sourceVal.NumField(); i++ {
+				valueField := sourceVal.Field(i)
+				typeField := sourceVal.Type().Field(i)
+				if typeField.Anonymous && typeField.Type.Kind() == reflect.Struct {
+					resolved, err := extractAnonymousStructFields(typeField.Type, valueField, p.Info.FieldName)
+					if err != nil {
+						return nil, err
+					} else if resolved != nil {
+						return resolved, nil
+					} else {
+						continue
+					}
+				}
 			}
 		}
 		return nil, nil
