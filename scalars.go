@@ -1,7 +1,9 @@
 package graphql
 
 import (
+	"fmt"
 	"math"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -404,7 +406,25 @@ func coerceString(value interface{}) interface{} {
 		}
 		return strconv.FormatFloat(*v, 'e', -1, 64)
 	}
-	return nil
+	v := reflect.ValueOf(value)
+	if v.IsNil() {
+		return nil
+	}
+	switch v.Kind() {
+	case reflect.String:
+		return v.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32,reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(v.Uint(), 10)
+	case reflect.Float32, reflect.Float64:
+		return strconv.FormatFloat(v.Float(), 'e', -1, 64)
+	case reflect.Bool:
+		return strconv.FormatBool(v.Bool())
+	case reflect.Ptr:
+		return coerceString(v.Elem())
+	}
+	return fmt.Sprintf("%v", value)
 }
 
 // String is the GraphQL string type definition
