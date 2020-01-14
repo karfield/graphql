@@ -407,9 +407,6 @@ func coerceString(value interface{}) interface{} {
 		return strconv.FormatFloat(*v, 'e', -1, 64)
 	}
 	v := reflect.ValueOf(value)
-	if v.IsNil() {
-		return nil
-	}
 	switch v.Kind() {
 	case reflect.String:
 		return v.String()
@@ -422,7 +419,14 @@ func coerceString(value interface{}) interface{} {
 	case reflect.Bool:
 		return strconv.FormatBool(v.Bool())
 	case reflect.Ptr:
+		if v.IsNil() {
+			return nil
+		}
 		return coerceString(v.Elem())
+	case reflect.Slice, reflect.Map, reflect.Func, reflect.Chan, reflect.UnsafePointer, reflect.Interface:
+		if v.IsNil() {
+			return nil
+		}
 	}
 	return fmt.Sprintf("%v", value)
 }
