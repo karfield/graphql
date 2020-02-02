@@ -54,6 +54,13 @@ var TypeMetaFieldDef *FieldDefinition
 // TypeNameMetaFieldDef Meta field definition for type names
 var TypeNameMetaFieldDef *FieldDefinition
 
+type fakeRootType struct {
+	Name        string              `json:"name"`
+	Kind        string              `json:"kind"`
+	Description string              `json:"description"`
+	Fields      FieldDefinitionList `json:"fields"`
+}
+
 func init() {
 
 	TypeKindEnumType = NewEnum(EnumConfig{
@@ -425,8 +432,25 @@ func init() {
 			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewNonNull(TypeType),
+				Args: FieldConfigArgument{
+					"fieldName": {
+						Description: "select which field expected to show only",
+						Type:        String,
+					},
+				},
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
+						if fieldName, ok := p.Args["fieldName"]; ok {
+							if field, ok := schema.queryType.fieldMap[fieldName.(string)]; ok {
+								return fakeRootType{
+									Name:   "Query",
+									Kind:   TypeKindObject,
+									Fields: FieldDefinitionList{field},
+								}, nil
+							} else {
+								return nil, fmt.Errorf("no such field in 'Query'")
+							}
+						}
 						return schema.QueryType(), nil
 					}
 					return nil, nil
@@ -436,9 +460,26 @@ func init() {
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: TypeType,
+				Args: FieldConfigArgument{
+					"fieldName": {
+						Description: "select which field expected to show only",
+						Type:        String,
+					},
+				},
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.MutationType() != nil {
+							if fieldName, ok := p.Args["fieldName"]; ok {
+								if field, ok := schema.MutationType().fieldMap[fieldName.(string)]; ok {
+									return fakeRootType{
+										Name:   "Mutation",
+										Kind:   TypeKindObject,
+										Fields: FieldDefinitionList{field},
+									}, nil
+								} else {
+									return nil, fmt.Errorf("no such field in 'Mutation'")
+								}
+							}
 							return schema.MutationType(), nil
 						}
 					}
@@ -449,9 +490,26 @@ func init() {
 				Description: `If this server supports subscription, the type that ` +
 					`subscription operations will be rooted at.`,
 				Type: TypeType,
+				Args: FieldConfigArgument{
+					"fieldName": {
+						Description: "select which field expected to show only",
+						Type:        String,
+					},
+				},
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.SubscriptionType() != nil {
+							if fieldName, ok := p.Args["fieldName"]; ok {
+								if field, ok := schema.SubscriptionType().fieldMap[fieldName.(string)]; ok {
+									return fakeRootType{
+										Name:   "Subscription",
+										Kind:   TypeKindObject,
+										Fields: FieldDefinitionList{field},
+									}, nil
+								} else {
+									return nil, fmt.Errorf("no such field in 'Subscription'")
+								}
+							}
 							return schema.SubscriptionType(), nil
 						}
 					}
