@@ -54,11 +54,19 @@ var TypeMetaFieldDef *FieldDefinition
 // TypeNameMetaFieldDef Meta field definition for type names
 var TypeNameMetaFieldDef *FieldDefinition
 
-type fakeRootType struct {
-	Name        string              `json:"name"`
-	Kind        string              `json:"kind"`
-	Description string              `json:"description"`
-	Fields      FieldDefinitionList `json:"fields"`
+func fakeRootType(obj *Object, fields ...*FieldDefinition) *Object {
+	tt := &Object{
+		PrivateName:        obj.PrivateName,
+		PrivateDescription: obj.PrivateDescription,
+		IsTypeOf:           obj.IsTypeOf,
+		typeConfig:         obj.typeConfig,
+		fields:             fields,
+		fieldMap:           map[string]*FieldDefinition{},
+	}
+	for _, f := range fields {
+		tt.fieldMap[f.Name] = f
+	}
+	return tt
 }
 
 func init() {
@@ -441,12 +449,8 @@ func init() {
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if fieldName, ok := p.Args["fieldName"]; ok {
-							if field, ok := schema.queryType.fieldMap[fieldName.(string)]; ok {
-								return fakeRootType{
-									Name:   "Query",
-									Kind:   TypeKindObject,
-									Fields: FieldDefinitionList{field},
-								}, nil
+							if field, ok := schema.QueryType().fieldMap[fieldName.(string)]; ok {
+								return fakeRootType(schema.QueryType(), field), nil
 							} else {
 								return nil, fmt.Errorf("no such field in 'Query'")
 							}
@@ -471,11 +475,7 @@ func init() {
 						if schema.MutationType() != nil {
 							if fieldName, ok := p.Args["fieldName"]; ok {
 								if field, ok := schema.MutationType().fieldMap[fieldName.(string)]; ok {
-									return fakeRootType{
-										Name:   "Mutation",
-										Kind:   TypeKindObject,
-										Fields: FieldDefinitionList{field},
-									}, nil
+									return fakeRootType(schema.MutationType(), field), nil
 								} else {
 									return nil, fmt.Errorf("no such field in 'Mutation'")
 								}
@@ -501,11 +501,7 @@ func init() {
 						if schema.SubscriptionType() != nil {
 							if fieldName, ok := p.Args["fieldName"]; ok {
 								if field, ok := schema.SubscriptionType().fieldMap[fieldName.(string)]; ok {
-									return fakeRootType{
-										Name:   "Subscription",
-										Kind:   TypeKindObject,
-										Fields: FieldDefinitionList{field},
-									}, nil
+									return fakeRootType(schema.SubscriptionType(), field), nil
 								} else {
 									return nil, fmt.Errorf("no such field in 'Subscription'")
 								}
