@@ -56,12 +56,14 @@ var TypeNameMetaFieldDef *FieldDefinition
 
 func makeRootType(obj *Object, fields ...*FieldDefinition) *Object {
 	tt := &Object{
-		PrivateName:        obj.PrivateName,
-		PrivateDescription: obj.PrivateDescription,
-		IsTypeOf:           obj.IsTypeOf,
-		typeConfig:         obj.typeConfig,
-		fields:             fields,
-		fieldMap:           map[string]*FieldDefinition{},
+		initialisedFields:     true,
+		initialisedInterfaces: true,
+		PrivateName:           obj.PrivateName,
+		PrivateDescription:    obj.PrivateDescription,
+		IsTypeOf:              obj.IsTypeOf,
+		typeConfig:            obj.typeConfig,
+		fields:                fields,
+		fieldMap:              map[string]*FieldDefinition{},
 	}
 	for _, f := range fields {
 		tt.fieldMap[f.Name] = f
