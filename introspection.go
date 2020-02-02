@@ -71,18 +71,15 @@ func filterRootObjectFields(obj *Object, args map[string]interface{}) (*Object, 
 			fields = append(fields, field)
 		}
 	}
-	if len(fields) > 0 {
-		return &Object{
-			initialisedFields:     true,
-			initialisedInterfaces: true,
-			PrivateName:           obj.PrivateName,
-			PrivateDescription:    obj.PrivateDescription,
-			IsTypeOf:              obj.IsTypeOf,
-			typeConfig:            obj.typeConfig,
-			fields:                fields,
-		}, filtered
-	}
-	return nil, filtered
+	return &Object{
+		initialisedFields:     true,
+		initialisedInterfaces: true,
+		PrivateName:           obj.PrivateName,
+		PrivateDescription:    obj.PrivateDescription,
+		IsTypeOf:              obj.IsTypeOf,
+		typeConfig:            obj.typeConfig,
+		fields:                fields,
+	}, filtered
 }
 
 func init() {
