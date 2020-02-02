@@ -54,7 +54,7 @@ var TypeMetaFieldDef *FieldDefinition
 // TypeNameMetaFieldDef Meta field definition for type names
 var TypeNameMetaFieldDef *FieldDefinition
 
-func fakeRootType(obj *Object, fields ...*FieldDefinition) *Object {
+func makeRootType(obj *Object, fields ...*FieldDefinition) *Object {
 	tt := &Object{
 		PrivateName:        obj.PrivateName,
 		PrivateDescription: obj.PrivateDescription,
@@ -450,7 +450,7 @@ func init() {
 					if schema, ok := p.Source.(Schema); ok {
 						if fieldName, ok := p.Args["fieldName"]; ok {
 							if field, ok := schema.QueryType().fieldMap[fieldName.(string)]; ok {
-								return fakeRootType(schema.QueryType(), field), nil
+								return makeRootType(schema.QueryType(), field), nil
 							} else {
 								return nil, fmt.Errorf("no such field in 'Query'")
 							}
@@ -475,7 +475,7 @@ func init() {
 						if schema.MutationType() != nil {
 							if fieldName, ok := p.Args["fieldName"]; ok {
 								if field, ok := schema.MutationType().fieldMap[fieldName.(string)]; ok {
-									return fakeRootType(schema.MutationType(), field), nil
+									return makeRootType(schema.MutationType(), field), nil
 								} else {
 									return nil, fmt.Errorf("no such field in 'Mutation'")
 								}
@@ -501,7 +501,7 @@ func init() {
 						if schema.SubscriptionType() != nil {
 							if fieldName, ok := p.Args["fieldName"]; ok {
 								if field, ok := schema.SubscriptionType().fieldMap[fieldName.(string)]; ok {
-									return fakeRootType(schema.SubscriptionType(), field), nil
+									return makeRootType(schema.SubscriptionType(), field), nil
 								} else {
 									return nil, fmt.Errorf("no such field in 'Subscription'")
 								}
