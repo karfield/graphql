@@ -54,21 +54,35 @@ var TypeMetaFieldDef *FieldDefinition
 // TypeNameMetaFieldDef Meta field definition for type names
 var TypeNameMetaFieldDef *FieldDefinition
 
-func makeRootType(obj *Object, fields ...*FieldDefinition) *Object {
-	tt := &Object{
-		initialisedFields:     true,
-		initialisedInterfaces: true,
-		PrivateName:           obj.PrivateName,
-		PrivateDescription:    obj.PrivateDescription,
-		IsTypeOf:              obj.IsTypeOf,
-		typeConfig:            obj.typeConfig,
-		fields:                fields,
-		fieldMap:              map[string]*FieldDefinition{},
+func filterRootObjectFields(obj *Object, args map[string]interface{}) (*Object, bool) {
+	var fieldNames []string
+	filtered := false
+	if names, ok := args["fieldNames"]; ok {
+		filtered = true
+		fieldNames = names.([]string)
 	}
-	for _, f := range fields {
-		tt.fieldMap[f.Name] = f
+	if name, ok := args["fieldName"]; ok {
+		filtered = true
+		fieldNames = append(fieldNames, name.(string))
 	}
-	return tt
+	var fields FieldDefinitionList
+	for _, name := range fieldNames {
+		if field, ok := obj.fieldMap[name]; ok {
+			fields = append(fields, field)
+		}
+	}
+	if len(fields) > 0 {
+		return &Object{
+			initialisedFields:     true,
+			initialisedInterfaces: true,
+			PrivateName:           obj.PrivateName,
+			PrivateDescription:    obj.PrivateDescription,
+			IsTypeOf:              obj.IsTypeOf,
+			typeConfig:            obj.typeConfig,
+			fields:                fields,
+		}, filtered
+	}
+	return nil, filtered
 }
 
 func init() {
@@ -417,6 +431,17 @@ func init() {
 		},
 	})
 
+	rootObjectFilterArgs := FieldConfigArgument{
+		"fieldName": {
+			Description: "select which field expected to show only",
+			Type:        String,
+		},
+		"fieldNames": {
+			Description: "select which fields expected to show only",
+			Type:        NewList(String),
+		},
+	}
+
 	SchemaType = NewObject(ObjectConfig{
 		Name: "__Schema",
 		Description: `A GraphQL Schema defines the capabilities of a GraphQL server. ` +
@@ -442,22 +467,14 @@ func init() {
 			"queryType": &Field{
 				Description: "The type that query operations will be rooted at.",
 				Type:        NewNonNull(TypeType),
-				Args: FieldConfigArgument{
-					"fieldName": {
-						Description: "select which field expected to show only",
-						Type:        String,
-					},
-				},
+				Args:        rootObjectFilterArgs,
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
-						if fieldName, ok := p.Args["fieldName"]; ok {
-							if field, ok := schema.QueryType().fieldMap[fieldName.(string)]; ok {
-								return makeRootType(schema.QueryType(), field), nil
-							} else {
-								return nil, fmt.Errorf("no such field in 'Query'")
-							}
+						if queryType, filtered := filterRootObjectFields(schema.QueryType(), p.Args); filtered {
+							return queryType, nil
+						} else {
+							return schema.QueryType(), nil
 						}
-						return schema.QueryType(), nil
 					}
 					return nil, nil
 				}),
@@ -466,23 +483,15 @@ func init() {
 				Description: `If this server supports mutation, the type that ` +
 					`mutation operations will be rooted at.`,
 				Type: TypeType,
-				Args: FieldConfigArgument{
-					"fieldName": {
-						Description: "select which field expected to show only",
-						Type:        String,
-					},
-				},
+				Args: rootObjectFilterArgs,
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.MutationType() != nil {
-							if fieldName, ok := p.Args["fieldName"]; ok {
-								if field, ok := schema.MutationType().fieldMap[fieldName.(string)]; ok {
-									return makeRootType(schema.MutationType(), field), nil
-								} else {
-									return nil, fmt.Errorf("no such field in 'Mutation'")
-								}
+							if queryType, filtered := filterRootObjectFields(schema.MutationType(), p.Args); filtered {
+								return queryType, nil
+							} else {
+								return schema.MutationType(), nil
 							}
-							return schema.MutationType(), nil
 						}
 					}
 					return nil, nil
@@ -492,23 +501,15 @@ func init() {
 				Description: `If this server supports subscription, the type that ` +
 					`subscription operations will be rooted at.`,
 				Type: TypeType,
-				Args: FieldConfigArgument{
-					"fieldName": {
-						Description: "select which field expected to show only",
-						Type:        String,
-					},
-				},
+				Args: rootObjectFilterArgs,
 				Resolve: ResolveField(func(p ResolveParams) (interface{}, error) {
 					if schema, ok := p.Source.(Schema); ok {
 						if schema.SubscriptionType() != nil {
-							if fieldName, ok := p.Args["fieldName"]; ok {
-								if field, ok := schema.SubscriptionType().fieldMap[fieldName.(string)]; ok {
-									return makeRootType(schema.SubscriptionType(), field), nil
-								} else {
-									return nil, fmt.Errorf("no such field in 'Subscription'")
-								}
+							if queryType, filtered := filterRootObjectFields(schema.SubscriptionType(), p.Args); filtered {
+								return queryType, nil
+							} else {
+								return schema.SubscriptionType(), nil
 							}
-							return schema.SubscriptionType(), nil
 						}
 					}
 					return nil, nil
