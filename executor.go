@@ -598,42 +598,78 @@ func handleFieldError(r interface{}, fieldNodes []ast.Node, path *ResponsePath, 
 	eCtx.Errors = append(eCtx.Errors, gqlerrors.FormatError(err))
 }
 
-func (info *ResolveInfo) flatSelections(selection ast.Selection, initial bool, parent string) {
-	switch selection := selection.(type) {
+func (info *ResolveInfo) isInSelection(name string, sel ast.Selection) bool {
+	switch sel := sel.(type) {
 	case *ast.Field:
-		fieldName := selection.Name.Value
+		fieldName := sel.Name.Value
 		if fieldName == "__typename" {
-			return
+			return false
 		}
-		if !initial {
-			if info.FieldSelectionSet == nil {
-				info.FieldSelectionSet = map[string]*ast.Field{}
-			}
-			info.FieldSelectionSet[fieldName] = selection
+
+		wantedFieldName := name
+		leftFieldName := ""
+		if slash := strings.Index(name, "/"); slash > 0 {
+			wantedFieldName = name[0:slash]
+			leftFieldName = name[slash+1:]
 		}
-		if selection.SelectionSet != nil {
-			if parent != "" {
-				parent += "/"
+		if fieldName == wantedFieldName || wantedFieldName == "*" {
+			if leftFieldName == "" {
+				return true
 			}
-			parent += fieldName
-			for _, s := range selection.SelectionSet.Selections {
-				info.flatSelections(s, false, parent)
+		}
+		if sel.SelectionSet != nil {
+			for _, s := range sel.SelectionSet.Selections {
+				if info.isInSelection(leftFieldName, s) {
+					return true
+				}
 			}
 		}
 	case *ast.FragmentSpread:
-		fragment := info.Fragments[selection.Name.Value].(*ast.FragmentDefinition)
+		fragment := info.Fragments[sel.Name.Value].(*ast.FragmentDefinition)
 		if fragment.SelectionSet != nil {
 			for _, s := range fragment.SelectionSet.Selections {
-				info.flatSelections(s, false, parent)
+				if info.isInSelection(name, s) {
+					return true
+				}
 			}
 		}
 	case *ast.InlineFragment:
-		if selection.SelectionSet != nil {
-			for _, s := range selection.SelectionSet.Selections {
-				info.flatSelections(s, false, parent)
+		if sel.SelectionSet != nil {
+			for _, s := range sel.SelectionSet.Selections {
+				if info.isInSelection(name, s) {
+					return true
+				}
 			}
 		}
 	}
+	return false
+}
+
+func (info *ResolveInfo) IsFieldSelected(fieldNames ...string) bool {
+	for _, fieldName := range fieldNames {
+		currentFieldName := fieldName
+		leftFieldName := ""
+		if slash := strings.Index(fieldName, "/"); slash >= 0 {
+			currentFieldName = fieldName[0:slash]
+			leftFieldName = fieldName[slash+1:]
+		}
+		wildMatch := currentFieldName == "" || currentFieldName == "*"
+		for _, fieldAst := range info.FieldASTs {
+			if fieldAst.Name.Value == currentFieldName || wildMatch {
+				if leftFieldName == "" {
+					return true
+				}
+				if selSet := fieldAst.GetSelectionSet(); selSet != nil {
+					for _, sel := range selSet.Selections {
+						if info.isInSelection(leftFieldName, sel) {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Resolves the field on the given source object. In particular, this
@@ -685,8 +721,6 @@ func resolveField(eCtx *executionContext, parentType *Object, source interface{}
 		Operation:      eCtx.Operation,
 		VariableValues: eCtx.VariableValues,
 	}
-
-	(&info).flatSelections(fieldAST, true, "")
 
 	extErrs, resolveFieldFinishFn := handleExtensionsResolveFieldDidStart(eCtx.Schema.extensions, eCtx, &info)
 	if len(extErrs) != 0 {
@@ -996,7 +1030,7 @@ func extractAnonymousStructFields(fieldType reflect.Type, fieldVal reflect.Value
 		return extractAnonymousStructFields(fieldType.Elem(), fieldVal.Elem(), wantedFieldName)
 	} else if fieldType.Kind() == reflect.Struct {
 		hasAnonymousFields := false
-		for i := 0; i < fieldType.NumField(); i ++ {
+		for i := 0; i < fieldType.NumField(); i++ {
 			subField := fieldType.Field(i)
 			subFieldValue := fieldVal.Field(i)
 			if subField.Anonymous {
@@ -1025,7 +1059,7 @@ func extractAnonymousStructFields(fieldType reflect.Type, fieldVal reflect.Value
 			}
 		}
 		if hasAnonymousFields {
-			for i := 0; i < fieldType.NumField(); i ++ {
+			for i := 0; i < fieldType.NumField(); i++ {
 				subField := fieldType.Field(i)
 				subFieldValue := fieldVal.Field(i)
 				if subField.Anonymous {
@@ -1068,7 +1102,7 @@ func DefaultResolveFn(p ResolveParams) (interface{}, error) {
 		for i := 0; i < sourceVal.NumField(); i++ {
 			valueField := sourceVal.Field(i)
 			typeField := sourceVal.Type().Field(i)
-			if typeField.Anonymous && typeField.Type.Kind() == reflect.Struct{
+			if typeField.Anonymous && typeField.Type.Kind() == reflect.Struct {
 				hasAnonymousFields = true
 				continue
 			}

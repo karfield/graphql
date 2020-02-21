@@ -265,3 +265,64 @@ func TestExecutesResolveFunction_UsesProvidedResolveFunction_SourceIsStruct_With
 		t.Fatalf("Unexpected result, Diff: %v", testutil.Diff(expected, result.Data))
 	}
 }
+
+func testIsSelected(t *testing.T) graphql.Schema {
+	return testSchema(t, &graphql.Field{
+		Type: graphql.NewObject(graphql.ObjectConfig{
+			Name: "SubObject",
+			Fields: graphql.Fields{
+				"str": &graphql.Field{
+					Type: graphql.String,
+					Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
+						if !p.Info.IsFieldSelected("*") {
+							t.Error("expect '/str' selected")
+						}
+						return 0, nil
+					}),
+				},
+				"int": &graphql.Field{
+					Type: graphql.Int,
+				},
+			},
+		}),
+		Resolve: graphql.ResolveField(func(p graphql.ResolveParams) (interface{}, error) {
+			if !p.Info.IsFieldSelected("/str") {
+				t.Error("expect '/str' selected")
+			}
+			if p.Info.IsFieldSelected("/int") {
+				t.Error("expect '/int' not selected")
+			}
+			return struct{}{}, nil
+		}),
+	})
+}
+
+func TestExecutesResolveFunction_IsSelected_ByFieldAST(t *testing.T) {
+	_, err := graphql.Do(graphql.Params{
+		Schema:        testIsSelected(t),
+		RequestString: `{ test { str } }`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestExecutesResolveFunction_IsSelected_ByFragment(t *testing.T) {
+	_, err := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test { ... SubObjectFragment } } fragment SubObjectFragment on SubObject { str } `,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func TestExecutesResolveFunction_IsSelected_ByInlineFragment(t *testing.T) {
+	_, err := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: `{ test { ... on SubObject { str } } }`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+}

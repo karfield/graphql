@@ -680,19 +680,17 @@ func (ResolveField) fieldResolveFn()            {}
 func (ResolveFieldWithContext) fieldResolveFn() {}
 
 type ResolveInfo struct {
-	FieldName         string
-	FieldASTs         []*ast.Field
-	FieldSelectionSet map[string]*ast.Field
-	Path              *ResponsePath
-	ReturnType        Output
-	ParentType        Composite
-	Schema            Schema
-	Fragments         map[string]ast.Definition
-	RootValue         interface{}
-	Operation         ast.Definition
-	VariableValues    map[string]interface{}
+	FieldName      string
+	FieldASTs      []*ast.Field
+	Path           *ResponsePath
+	ReturnType     Output
+	ParentType     Composite
+	Schema         Schema
+	Fragments      map[string]ast.Definition
+	RootValue      interface{}
+	Operation      ast.Definition
+	VariableValues map[string]interface{}
 }
-
 type ConfigurableFields interface {
 	configurableFields()
 }
