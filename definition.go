@@ -1118,6 +1118,17 @@ func (gt *Enum) ParseValue(value interface{}) interface{} {
 		v = value
 	case *string:
 		v = *value
+	case map[string]interface{}:
+		return fmt.Errorf("illegal enum value of object")
+	case []interface{}:
+		return fmt.Errorf("illegal enum value of array")
+		return nil
+	case *map[string]interface{}:
+		return fmt.Errorf("illegal enum value of object")
+		return nil
+	case *[]interface{}:
+		return fmt.Errorf("illegal enum value of array")
+		return nil
 	default:
 		if gt.getValueLookup()[value] != nil {
 			return value
